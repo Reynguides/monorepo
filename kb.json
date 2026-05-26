@@ -1,0 +1,22 @@
+[
+  {
+    "tags": ["anti-mage", "low-hp", "escape"],
+    "content": "When Anti-Mage is low on health, use Blink to escape to safety. Position yourself near your team or under a tower to maximize your survivability."
+  },
+  {
+    "tags": ["pudge", "hook", "initiate", "teamfight"],
+    "content": "Pudge's hook is most effective when enemies are out of position. Wait for key targets to walk into hook range, then land the hook to catch them off-guard and start a teamfight."
+  },
+  {
+    "tags": ["crystal-maiden", "mana", "support", "regen"],
+    "content": "Crystal Maiden's aura provides mana regeneration to all nearby allies. Stay close to your teammates to maximize mana efficiency and allow your carry to farm more efficiently."
+  },
+  {
+    "tags": ["anti-mage", "damage", "farming", "late-game"],
+    "content": "Anti-Mage scales extremely well into the late game. Focus on farming efficiently in the early and mid game to reach your damage threshold faster and dominate fights."
+  },
+  {
+    "tags": ["pudge", "ult", "shutdown", "disable"],
+    "content": "Pudge's ultimate Dismember can be used to secure kills or shut down enemies during teamfights. Prioritize securing high-value targets to maximize the impact of your team."
+  }
+]
