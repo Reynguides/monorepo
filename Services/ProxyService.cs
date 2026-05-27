@@ -11,7 +11,7 @@ namespace Overlay_in_game_WPF
     {
         private const string Upstream = "https://jsonplaceholder.typicode.com";
 
-        public async Task<(int status, string body)> ForwardAsync(string path, string method)
+        public async Task<(int status, string body)> ForwardAsync(string path, string method, SyncService sync)
         {
             var request = new HttpRequestMessage(new HttpMethod(method), Upstream + path);
             var response = await http.SendAsync(request);
@@ -20,9 +20,11 @@ namespace Overlay_in_game_WPF
             db.Logs.Add(new RequestLog {
                 Method = method,
                 Path = path,
-                StatusCode = (int)response.StatusCode
+                StatusCode = (int)response.StatusCode,
+                UpdatedAt = DateTime.UtcNow
             });
             await db.SaveChangesAsync();
+            await sync.PushAsync();
 
             return ((int)response.StatusCode, body);
         }

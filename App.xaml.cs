@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Configuration;
 using System.Data;
 using System.Windows;
-using Microsoft.EntityFrameworkCore;
 
 namespace Overlay_in_game_WPF
 {
@@ -19,6 +19,7 @@ namespace Overlay_in_game_WPF
                 o.UseSqlite("Data Source=proxy.db"));
 
             collection.AddHttpClient<ProxyService>();
+            collection.AddHttpClient<SyncService>();
 
             Services = collection.BuildServiceProvider();
 

@@ -51,6 +51,7 @@ namespace Overlay_in_game_WPF
         private AiHintService _aiHintService;
 
         private readonly ProxyService _proxy = App.Services.GetRequiredService<ProxyService>();
+        private readonly SyncService _sync = App.Services.GetRequiredService<SyncService>();
 
         public MainWindow()
         {
@@ -69,7 +70,7 @@ namespace Overlay_in_game_WPF
             IntPtr newStyle = new IntPtr((long)exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST);
             SetWindowLongPtr(hwnd, GWL_EXSTYLE, newStyle);
 
-            var (status, body) = await _proxy.ForwardAsync("/posts/1", "GET");
+            var (status, body) = await _proxy.ForwardAsync("/posts/1", "GET", _sync);
             
             ////_knowledgeBase = new KnowledgeBase();
             ////_aiHintService = new AiHintService();
