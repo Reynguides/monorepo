@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -49,12 +50,14 @@ namespace Overlay_in_game_WPF
         private KnowledgeBase _knowledgeBase;
         private AiHintService _aiHintService;
 
+        private readonly ProxyService _proxy = App.Services.GetRequiredService<ProxyService>();
+
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        protected override void OnSourceInitialized(EventArgs e)
+        protected override async void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
 
@@ -66,17 +69,19 @@ namespace Overlay_in_game_WPF
             IntPtr newStyle = new IntPtr((long)exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST);
             SetWindowLongPtr(hwnd, GWL_EXSTYLE, newStyle);
 
-            //_knowledgeBase = new KnowledgeBase();
-            //_aiHintService = new AiHintService();
+            var (status, body) = await _proxy.ForwardAsync("/posts/1", "GET");
+            
+            ////_knowledgeBase = new KnowledgeBase();
+            ////_aiHintService = new AiHintService();
 
-            _checkTimer = new DispatcherTimer();
-            _checkTimer.Interval = TimeSpan.FromMilliseconds(500);
-            _checkTimer.Tick += CheckForDota2Process;
-            _checkTimer.Start();
+            //_checkTimer = new DispatcherTimer();
+            //_checkTimer.Interval = TimeSpan.FromMilliseconds(500);
+            //_checkTimer.Tick += CheckForDota2Process;
+            //_checkTimer.Start();
 
-            _gameStateProvider = new GsiServer(); // new LogFileGameStateProvider()
-            _gameStateProvider.OnGameStateReceived += GsiServer_OnGameStateReceived;
-            _gameStateProvider.Start();
+            //_gameStateProvider = new GsiServer(); // new LogFileGameStateProvider()
+            //_gameStateProvider.OnGameStateReceived += GsiServer_OnGameStateReceived;
+            //_gameStateProvider.Start();
         }
 
         private void GsiServer_OnGameStateReceived(object sender, GameStateReceivedEventArgs e)
