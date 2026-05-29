@@ -1,0 +1,196 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  # ─── .NET ──────────────────────────────────────────────────────────
+  # Builds and tests every csproj in the solution with warnings-as-errors,
+  # collects coverage via coverlet, and gates on the ≥95% line floor per
+  # ADR-0004. Windows runner because the WPF + FlaUI tests require it.
+  dotnet:
+    name: .NET (build + test + coverage gate)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Reyn.sln
+
+      - name: Build (warnaserror)
+        run: dotnet build Reyn.sln --configuration Release --no-restore -warnaserror
+
+      - name: Test with coverage
+        # FlaUI tests need a real interactive desktop, which `windows-latest`
+        # provides via the default session. Coverage report lands in
+        # TestResults/**/coverage.cobertura.xml.
+        run: >
+          dotnet test Reyn.sln
+          --configuration Release
+          --no-build
+          --settings tools/coverage/coverlet.runsettings
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory TestResults
+
+      - name: Aggregate coverage report
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          reportgenerator `
+            -reports:"TestResults/**/coverage.cobertura.xml" `
+            -targetdir:"coverage-report" `
+            -reporttypes:"TextSummary;Cobertura"
+        shell: pwsh
+
+      - name: Enforce coverage floor (≥95% line)
+        # The plan's Phase 11 DoD explicitly checks line coverage on .NET.
+        # Branch coverage is enforced on the worker side (vitest config:
+        # branches >= 90) but not gated here per the plan. We still log
+        # it for visibility. The plan permits adding
+        # `[ExcludeFromCodeCoverage]` but never lowering this gate.
+        run: |
+          $summary = Get-Content coverage-report/Summary.txt -Raw
+          $lineMatch = [regex]::Match($summary, 'Line coverage:\s+([\d.]+)')
+          $branchMatch = [regex]::Match($summary, 'Branch coverage:\s+([\d.]+)')
+          $line = [double]$lineMatch.Groups[1].Value
+          $branch = [double]$branchMatch.Groups[1].Value
+          Write-Host "Line coverage: $line%"
+          Write-Host "Branch coverage: $branch% (reported, not gated)"
+          if ($line -lt 95) { Write-Error "Line coverage $line% < 95%"; exit 1 }
+        shell: pwsh
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report
+          if-no-files-found: warn
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-test-results
+          path: TestResults
+          if-no-files-found: warn
+
+  # ─── Worker ────────────────────────────────────────────────────────
+  # Cloudflare Worker: TS strict typecheck, ESLint, Prettier format, and
+  # vitest-pool-workers coverage gates (≥95 lines/stmts/funcs, ≥90 branches).
+  worker:
+    name: Worker (typecheck + lint + test:coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/reyn-cloud-worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        working-directory: .
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Test (with coverage)
+        # The vitest config already enforces 95/95/95/90 thresholds; this
+        # step fails if any threshold is missed.
+        run: pnpm test:coverage
+
+      - name: Upload worker coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker-coverage
+          path: apps/reyn-cloud-worker/coverage
+          if-no-files-found: warn
+
+  # ─── Lua mod ───────────────────────────────────────────────────────
+  # BG3SE uses Lua 5.1; install it on the CI runner and exercise the
+  # unit-test harness against the stubbed `Ext` table.
+  lua:
+    name: Lua mod (unit tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install lua5.1
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends lua5.1
+          lua5.1 -v
+
+      - name: Run mod tests
+        run: lua5.1 apps/reyn-bg3-mod/tests/lua/run.lua
+
+  # ─── Docs ──────────────────────────────────────────────────────────
+  # Catches broken markdown links + casual typos in our docs/. Cspell uses
+  # a project-level dictionary so domain words (BG3SE, Osiris, etc.) don't
+  # blow up the job.
+  docs:
+    name: Docs (link check + spell check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Markdown link check
+        # Lychee is fast and respects relative paths. Failure exits non-zero.
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --max-concurrency 4 'docs/**/*.md' 'CLAUDE.md' 'README.md' 'apps/reyn-bg3-mod/README.md'
+          fail: true
+
+      - name: Spell check (cspell)
+        run: |
+          npx --yes cspell --no-progress \
+            --config cspell.json \
+            "docs/**/*.md" "CLAUDE.md" "README.md" "apps/reyn-bg3-mod/README.md"
+
+  # ─── Secrets scan ──────────────────────────────────────────────────
+  # Gitleaks scans the working tree + git history for accidentally
+  # committed secrets. Fails the build on any match.
+  secrets-scan:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
