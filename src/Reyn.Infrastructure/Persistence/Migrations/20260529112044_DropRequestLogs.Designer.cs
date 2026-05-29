@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Reyn.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using Reyn.Infrastructure.Persistence;
 namespace Reyn.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ReynDbContext))]
-    partial class ReynDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260529112044_DropRequestLogs")]
+    partial class DropRequestLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.27");

@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-using Reyn.Infrastructure.Http;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -19,15 +17,12 @@ public partial class MainWindow
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr")]
     private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
 
-    private readonly ProxyService _proxy = App.Services.GetRequiredService<ProxyService>();
-    private readonly SyncService _sync = App.Services.GetRequiredService<SyncService>();
-
     public MainWindow()
     {
         InitializeComponent();
     }
 
-    protected override async void OnSourceInitialized(EventArgs e)
+    protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
 
@@ -35,7 +30,5 @@ public partial class MainWindow
         var exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
         var newStyle = new IntPtr((long)exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST);
         SetWindowLongPtr(hwnd, GWL_EXSTYLE, newStyle);
-
-        await _proxy.ForwardAsync("/posts/1", "GET", _sync).ConfigureAwait(false);
     }
 }

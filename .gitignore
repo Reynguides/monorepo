@@ -26,9 +26,11 @@ packages/
 
 # Test / coverage artefacts
 coverage/
+coverage-out/
 TestResults/
 **/coverage.cobertura.xml
 **/coverage.opencover.xml
+tools/coverage-report/
 
 # Node / pnpm
 node_modules/

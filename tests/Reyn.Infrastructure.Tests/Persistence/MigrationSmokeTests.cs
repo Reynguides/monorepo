@@ -32,7 +32,6 @@ public sealed class MigrationSmokeTests
             "achievements",
             "play_sessions",
             "sync_outbox",
-            "request_logs",
         });
     }
 
@@ -49,10 +48,11 @@ public sealed class MigrationSmokeTests
         await using var db = new ReynDbContext(options);
         await db.Database.MigrateAsync();
 
-        var applied = await db.Database.GetAppliedMigrationsAsync();
+        var applied = (await db.Database.GetAppliedMigrationsAsync()).ToList();
 
-        applied.Should().ContainSingle()
-            .Which.Should().EndWith("_Initial");
+        applied.Should().HaveCount(2);
+        applied[0].Should().EndWith("_Initial");
+        applied[1].Should().EndWith("_DropRequestLogs");
     }
 
     private static async Task<List<string>> ListUserTablesAsync(SqliteConnection connection)

@@ -45,4 +45,12 @@ export const USER_D1_INIT_STATEMENTS: readonly string[] = [
     server_updated_at INTEGER NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS play_sessions_user_started_idx ON play_sessions(user_id, started_at)`,
+  `CREATE TABLE IF NOT EXISTS sync_idempotency (
+    user_id         TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    response_json   TEXT NOT NULL,
+    created_at      INTEGER NOT NULL,
+    PRIMARY KEY (user_id, idempotency_key)
+  )`,
+  `CREATE INDEX IF NOT EXISTS sync_idempotency_created_at_idx ON sync_idempotency(created_at)`,
 ];

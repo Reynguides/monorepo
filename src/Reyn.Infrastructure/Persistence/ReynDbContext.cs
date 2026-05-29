@@ -18,13 +18,6 @@ public class ReynDbContext(DbContextOptions<ReynDbContext> options) : DbContext(
 
     public DbSet<SyncOutboxEntry> SyncOutbox => Set<SyncOutboxEntry>();
 
-    /// <summary>
-    /// Legacy proxy-request log. Kept in Phase 2 so the live HTTP-forward
-    /// path still works; retired in Phase 5 when <c>OutboxProcessor</c>
-    /// replaces <c>SyncService</c>.
-    /// </summary>
-    public DbSet<RequestLog> Logs => Set<RequestLog>();
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new UserAccountConfiguration());
@@ -33,6 +26,5 @@ public class ReynDbContext(DbContextOptions<ReynDbContext> options) : DbContext(
         modelBuilder.ApplyConfiguration(new AchievementConfiguration());
         modelBuilder.ApplyConfiguration(new PlaySessionConfiguration());
         modelBuilder.ApplyConfiguration(new SyncOutboxEntryConfiguration());
-        modelBuilder.ApplyConfiguration(new RequestLogConfiguration());
     }
 }

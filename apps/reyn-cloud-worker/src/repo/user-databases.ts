@@ -26,3 +26,19 @@ export async function insertUserDatabase(
     .run();
 }
 
+/**
+ * Sync push/pull handlers call this to resolve the authenticated user's
+ * per-user D1. Under PROVISIONER=shared every user maps to the same
+ * `SHARED_USER_DB_ID`; under PROVISIONER=dedicated each user has their own.
+ */
+export async function findDatabaseIdForUser(
+  db: D1Database,
+  userId: string,
+): Promise<string | null> {
+  const row = await db
+    .prepare("SELECT database_id FROM user_databases WHERE user_id = ?")
+    .bind(userId)
+    .first<{ database_id: string }>();
+  return row?.database_id ?? null;
+}
+
