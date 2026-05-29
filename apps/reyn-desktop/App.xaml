@@ -9,14 +9,20 @@
                 <ResourceDictionary Source="/Resources/Spacing.xaml"/>
                 <ResourceDictionary Source="/Resources/Shadows.xaml"/>
                 <ResourceDictionary Source="/Resources/Typography.xaml"/>
+                <ResourceDictionary Source="/Resources/Cards.xaml"/>
 
                 <!-- Default theme. Phase 7 ships dark first per AskUserQuestion. -->
                 <ResourceDictionary Source="/Themes/Reyn.Dark.xaml"/>
+
+                <!-- Per-VM-type page templates. Implicit DataTemplates picked
+                     by the MainShell ContentControl when ActivePage changes. -->
+                <ResourceDictionary Source="/Views/Shell/Pages/PageTemplates.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
             <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Invert="True"/>
             <conv:StringToVisibilityConverter x:Key="StringToVisibility"/>
+            <conv:PageStateToVisibilityConverter x:Key="ReadyStateToVisibility"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

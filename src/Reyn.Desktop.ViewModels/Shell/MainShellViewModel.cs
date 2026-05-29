@@ -67,14 +67,19 @@ public sealed partial class MainShellViewModel : ObservableObject
 
     partial void OnSelectedSectionChanged(NavigationSection? value)
     {
-        ActivePage = value?.Key switch
+        var next = value?.Key switch
         {
-            NavigationKey.Dashboard => Dashboard,
+            NavigationKey.Dashboard => (PageViewModelBase?)Dashboard,
             NavigationKey.Timeline => Timeline,
             NavigationKey.Achievements => Achievements,
             NavigationKey.Events => Events,
             NavigationKey.Settings => Settings,
             _ => null,
         };
+        ActivePage = next;
+        if (next is not null)
+        {
+            _ = next.LoadAsync(CancellationToken.None);
+        }
     }
 }

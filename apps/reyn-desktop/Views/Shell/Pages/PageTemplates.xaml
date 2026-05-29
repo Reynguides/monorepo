@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:Reyn.Desktop.ViewModels.Shell;assembly=Reyn.Desktop.ViewModels"
+                    xmlns:pages="clr-namespace:Reyn.Desktop.Views.Shell.Pages">
+
+    <!--
+        Implicit DataTemplates keyed by VM type. When MainShell's
+        ContentControl's Content is set to a DashboardViewModel instance,
+        WPF picks the template whose DataType matches and instantiates
+        DashboardView. No DataType attribute on the View itself; everything
+        is wired here.
+    -->
+
+    <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+        <pages:DashboardView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:TimelineViewModel}">
+        <pages:TimelineView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:AchievementsViewModel}">
+        <pages:AchievementsView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:EventsViewModel}">
+        <pages:EventsView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+        <pages:SettingsView/>
+    </DataTemplate>
+
+</ResourceDictionary>

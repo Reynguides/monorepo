@@ -12,9 +12,12 @@ using Reyn.Desktop.ViewModels.Shell;
 using Reyn.Desktop.Views.Auth;
 using Reyn.Desktop.Views.Shell;
 using Reyn.Desktop.Views.Splash;
+using Reyn.Application.Queries;
 using Reyn.Infrastructure.Auth;
+using Reyn.Infrastructure.Demo;
 using Reyn.Infrastructure.Http;
 using Reyn.Infrastructure.Persistence;
+using Reyn.Infrastructure.Queries;
 using Reyn.Infrastructure.Sync;
 
 namespace Reyn.Desktop;
@@ -40,6 +43,19 @@ public partial class App
             var db = scope.ServiceProvider.GetRequiredService<ReynDbContext>();
             db.Database.Migrate();
         }
+
+#if DEBUG
+        // --demo-mode seeds fixture data so charts/timeline/achievements/events
+        // pages render populated screenshots without a real BG3 session.
+        // DEBUG-gated so it cannot run in release binaries — same pattern as
+        // --skip-auth (see PR #8 / feedback-debug-gate-test-only-cli-flags).
+        if (e.Args.Contains("--demo-mode", StringComparer.OrdinalIgnoreCase))
+        {
+            using var seedScope = Services.CreateScope();
+            var seeder = seedScope.ServiceProvider.GetRequiredService<DemoDataSeeder>();
+            await seeder.SeedAsync(CancellationToken.None).ConfigureAwait(true);
+        }
+#endif
 
         await _host.StartAsync().ConfigureAwait(true);
 
@@ -142,9 +158,16 @@ public partial class App
     {
         services.AddSingleton<OutboxEnqueuingInterceptor>();
 
+        // AddDbContext for the outbox processor's scoped context; AddDbContextFactory
+        // for the page query service which creates fresh short-lived contexts so
+        // transient ViewModels don't smuggle a captive scope.
         services.AddDbContext<ReynDbContext>((sp, o) =>
             o.UseSqlite("Data Source=reyn-desktop.db")
              .AddInterceptors(sp.GetRequiredService<OutboxEnqueuingInterceptor>()));
+        services.AddDbContextFactory<ReynDbContext>((sp, o) =>
+            o.UseSqlite("Data Source=reyn-desktop.db")
+             .AddInterceptors(sp.GetRequiredService<OutboxEnqueuingInterceptor>()),
+            lifetime: ServiceLifetime.Singleton);
 
         services.AddSingleton<ICurrentUserAccessor, StaticCurrentUserAccessor>();
 
@@ -159,6 +182,9 @@ public partial class App
         services.Configure<SyncOptions>(_ => { });
         services.AddHttpClient<IEventSyncClient, HttpEventSyncClient>();
         services.AddHttpClient<IAuthClient, HttpAuthClient>();
+
+        services.AddTransient<IGameEventQueryService, GameEventQueryService>();
+        services.AddScoped<DemoDataSeeder>();
 
         services.AddHostedService<OutboxProcessor>();
 

@@ -1,18 +1,22 @@
 using FluentAssertions;
 using Reyn.Desktop.ViewModels.Shell;
+using Reyn.Desktop.ViewModels.Tests.Stubs;
 using Xunit;
 
 namespace Reyn.Desktop.ViewModels.Tests.Shell;
 
 public sealed class MainShellViewModelTests
 {
-    private static MainShellViewModel Build() =>
-        new(
-            new DashboardViewModel(),
-            new TimelineViewModel(),
-            new AchievementsViewModel(),
-            new EventsViewModel(),
+    private static MainShellViewModel Build()
+    {
+        var queries = new StubQueryService();
+        return new MainShellViewModel(
+            new DashboardViewModel(queries),
+            new TimelineViewModel(queries),
+            new AchievementsViewModel(queries),
+            new EventsViewModel(queries),
             new SettingsViewModel());
+    }
 
     [Fact]
     public void Defaults_to_dashboard_section_and_active_page()

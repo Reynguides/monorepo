@@ -136,14 +136,11 @@
                 </Grid>
             </Border>
 
+            <!-- ContentControl picks the per-VM-type DataTemplate from
+                 App.xaml resources (DashboardView, TimelineView, etc.). -->
             <ContentControl Grid.Row="1"
-                            Content="{Binding ActivePage}">
-                <ContentControl.ContentTemplate>
-                    <DataTemplate>
-                        <shell:PageView/>
-                    </DataTemplate>
-                </ContentControl.ContentTemplate>
-            </ContentControl>
+                            Content="{Binding ActivePage}"
+                            AutomationProperties.AutomationId="ActivePageHost"/>
         </Grid>
     </Grid>
 </Window>

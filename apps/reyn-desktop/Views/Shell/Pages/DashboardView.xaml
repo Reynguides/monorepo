@@ -1,0 +1,138 @@
+<UserControl x:Class="Reyn.Desktop.Views.Shell.Pages.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+             xmlns:controls="clr-namespace:Reyn.Desktop.Views.Shell.Controls"
+             xmlns:vm="clr-namespace:Reyn.Desktop.ViewModels.Shell;assembly=Reyn.Desktop.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:DashboardViewModel}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+    <Grid Margin="{StaticResource ThicknessLg}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding Title}"
+                   Style="{StaticResource TitleText}"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   AutomationProperties.AutomationId="PageTitle"/>
+        <TextBlock Grid.Row="1"
+                   Text="{Binding Subtitle}"
+                   Style="{StaticResource BodyText}"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   Margin="0,4,0,16"
+                   TextWrapping="Wrap"/>
+
+        <!-- Stat strip: total events / playtime / max level. Always rendered;
+             zero values are honest empty states without hiding the strip. -->
+        <Grid Grid.Row="2" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource StatCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="Events (30d)"
+                               Style="{StaticResource CaptionText}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"/>
+                    <TextBlock Text="{Binding TotalEvents}"
+                               Style="{StaticResource DisplayText}"
+                               Foreground="{DynamicResource AccentBrush}"
+                               Margin="0,4,0,0"
+                               AutomationProperties.AutomationId="StatTotalEvents"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource StatCardStyle}" Margin="12,0">
+                <StackPanel>
+                    <TextBlock Text="Playtime (min, 30d)"
+                               Style="{StaticResource CaptionText}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"/>
+                    <TextBlock Text="{Binding TotalPlaytimeMinutes, StringFormat={}{0:N0}}"
+                               Style="{StaticResource DisplayText}"
+                               Foreground="{DynamicResource AccentBrush}"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource StatCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="Max character level"
+                               Style="{StaticResource CaptionText}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"/>
+                    <TextBlock Text="{Binding MaxLevel}"
+                               Style="{StaticResource DisplayText}"
+                               Foreground="{DynamicResource AccentBrush}"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="3">
+            <!-- Loading/Empty/Error overlay -->
+            <controls:PageStateControl/>
+
+            <Grid Visibility="{Binding State, Converter={StaticResource ReadyStateToVisibility}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Events per day bar chart -->
+                <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource ChartCardStyle}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Events per day"
+                                   Style="{StaticResource HeadingText}"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,8"/>
+                        <lvc:CartesianChart Series="{Binding EventsPerDaySeries}"
+                                            XAxes="{Binding DayAxis}"
+                                            YAxes="{Binding CountAxis}"
+                                            AutomationProperties.AutomationId="ChartEventsPerDay"/>
+                    </DockPanel>
+                </Border>
+
+                <!-- Playtime per day line chart -->
+                <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource ChartCardStyle}" Margin="12,0,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Playtime (minutes)"
+                                   Style="{StaticResource HeadingText}"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,8"/>
+                        <lvc:CartesianChart Series="{Binding PlaytimePerDaySeries}"
+                                            XAxes="{Binding DayAxis}"
+                                            YAxes="{Binding MinutesAxis}"
+                                            AutomationProperties.AutomationId="ChartPlaytime"/>
+                    </DockPanel>
+                </Border>
+
+                <!-- Character level progression -->
+                <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource ChartCardStyle}" Margin="0,12,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Character level progression"
+                                   Style="{StaticResource HeadingText}"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,8"/>
+                        <lvc:CartesianChart Series="{Binding CharacterLevelSeries}"
+                                            YAxes="{Binding LevelAxis}"
+                                            AutomationProperties.AutomationId="ChartCharacterLevel"/>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

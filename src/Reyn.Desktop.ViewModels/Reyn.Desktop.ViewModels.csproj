@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView" />
   </ItemGroup>
 
 </Project>

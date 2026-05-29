@@ -1,0 +1,111 @@
+<UserControl x:Class="Reyn.Desktop.Views.Shell.Pages.AchievementsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Reyn.Desktop.Views.Shell.Controls"
+             xmlns:vm="clr-namespace:Reyn.Desktop.ViewModels.Shell;assembly=Reyn.Desktop.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             d:DataContext="{d:DesignInstance Type=vm:AchievementsViewModel}"
+             mc:Ignorable="d">
+    <Grid Margin="{StaticResource ThicknessLg}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding Title}"
+                   Style="{StaticResource TitleText}"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   AutomationProperties.AutomationId="PageTitle"/>
+        <TextBlock Grid.Row="1"
+                   Text="{Binding Subtitle}"
+                   Style="{StaticResource BodyText}"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   Margin="0,4,0,8"
+                   TextWrapping="Wrap"/>
+
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,16"
+                    AutomationProperties.AutomationId="AchievementsCount">
+            <TextBlock Text="{Binding UnlockedCount}"
+                       Style="{StaticResource CaptionText}"
+                       Foreground="{DynamicResource AccentBrush}"/>
+            <TextBlock Text=" of "
+                       Style="{StaticResource CaptionText}"
+                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+            <TextBlock Text="{Binding TotalCount}"
+                       Style="{StaticResource CaptionText}"
+                       Foreground="{DynamicResource AccentBrush}"/>
+            <TextBlock Text=" unlocked"
+                       Style="{StaticResource CaptionText}"
+                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+        </StackPanel>
+
+        <Grid Grid.Row="3">
+            <controls:PageStateControl/>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding State, Converter={StaticResource ReadyStateToVisibility}}"
+                          AutomationProperties.AutomationId="AchievementsList">
+                <ItemsControl ItemsSource="{Binding Achievements}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource StatCardStyle}" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="160"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding Title}"
+                                                   Style="{StaticResource HeadingText}"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{Binding Description}"
+                                                   Style="{StaticResource BodyText}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Margin="0,4,0,8"
+                                                   TextWrapping="Wrap"/>
+                                        <ProgressBar Maximum="{Binding Denominator}"
+                                                     Value="{Binding Numerator}"
+                                                     Height="6"
+                                                     Foreground="{DynamicResource AccentBrush}"
+                                                     Background="{DynamicResource DividerBrush}"
+                                                     BorderThickness="0"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding Numerator}"
+                                                       Style="{StaticResource HeadingText}"
+                                                       Foreground="{DynamicResource AccentBrush}"/>
+                                            <TextBlock Text="/"
+                                                       Style="{StaticResource HeadingText}"
+                                                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+                                            <TextBlock Text="{Binding Denominator}"
+                                                       Style="{StaticResource HeadingText}"
+                                                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+                                        </StackPanel>
+                                        <TextBlock Text="UNLOCKED"
+                                                   Style="{StaticResource CaptionText}"
+                                                   Foreground="{DynamicResource SuccessBrush}"
+                                                   HorizontalAlignment="Right"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding Unlocked, Converter={StaticResource BoolToVisibility}}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

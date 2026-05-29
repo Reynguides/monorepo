@@ -6,6 +6,10 @@
     <RootNamespace>Reyn.Desktop</RootNamespace>
     <AssemblyName>Reyn.Desktop</AssemblyName>
     <UseWPF>true</UseWPF>
+    <!-- SkiaSharp.Views.WPF + OpenTK.GLWpfControl advertise .NET Framework
+         TFM but run fine on net8.0-windows. The framework restore warning
+         is noisy and not actionable. -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +25,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="WPF-UI" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

@@ -1,0 +1,99 @@
+<UserControl x:Class="Reyn.Desktop.Views.Shell.Pages.TimelineView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Reyn.Desktop.Views.Shell.Controls"
+             xmlns:vm="clr-namespace:Reyn.Desktop.ViewModels.Shell;assembly=Reyn.Desktop.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             d:DataContext="{d:DesignInstance Type=vm:TimelineViewModel}"
+             mc:Ignorable="d">
+    <Grid Margin="{StaticResource ThicknessLg}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding Title}"
+                   Style="{StaticResource TitleText}"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   AutomationProperties.AutomationId="PageTitle"/>
+        <TextBlock Grid.Row="1"
+                   Text="{Binding Subtitle}"
+                   Style="{StaticResource BodyText}"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   Margin="0,4,0,16"
+                   TextWrapping="Wrap"/>
+
+        <Grid Grid.Row="2">
+            <controls:PageStateControl/>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Visibility="{Binding State, Converter={StaticResource ReadyStateToVisibility}}"
+                          AutomationProperties.AutomationId="TimelineList">
+                <ItemsControl ItemsSource="{Binding Sessions}"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource StatCardStyle}" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding StartedAt, StringFormat='yyyy-MM-dd HH:mm UTC'}"
+                                                   Style="{StaticResource HeadingText}"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding EventCount, StringFormat='{}{0} events'}"
+                                                   Style="{StaticResource CaptionText}"
+                                                   Foreground="{DynamicResource AccentBrush}"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding Events}" Margin="0,12,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="{Binding OccurredAt, StringFormat='HH:mm'}"
+                                                               Style="{StaticResource CaptionText}"
+                                                               Foreground="{DynamicResource TextTertiaryBrush}"
+                                                               Width="48"/>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding Type}"
+                                                               Style="{StaticResource CaptionText}"
+                                                               Foreground="{DynamicResource AccentBrush}"
+                                                               Width="220"/>
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="{Binding PayloadJson}"
+                                                               Style="{StaticResource CaptionText}"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

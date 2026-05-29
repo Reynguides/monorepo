@@ -61,6 +61,14 @@ public sealed class OutboxEnqueuingInterceptor : SaveChangesInterceptor
         var now = DateTime.UtcNow;
         foreach (var ev in addedEvents)
         {
+            // Stamp the event's own ContentHash if it's empty. The events
+            // table has UNIQUE(UserId, ContentHash); without this, multiple
+            // inserted events with blank hashes collide on the index. The
+            // outbox entry's PayloadHash mirrors the event's hash.
+            if (ev.ContentHash.Length == 0)
+            {
+                ev.ContentHash = ComputeHash(ev);
+            }
             if (existingOutboxIds.Contains(ev.EventId))
             {
                 continue;
@@ -68,7 +76,7 @@ public sealed class OutboxEnqueuingInterceptor : SaveChangesInterceptor
             db.SyncOutbox.Add(new SyncOutboxEntry
             {
                 EventId = ev.EventId,
-                PayloadHash = ev.ContentHash.Length > 0 ? ev.ContentHash : ComputeHash(ev),
+                PayloadHash = ev.ContentHash,
                 Status = Domain.SyncStatus.Pending,
                 CreatedAt = now,
                 Attempts = 0,
