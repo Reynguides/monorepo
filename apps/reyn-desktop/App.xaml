@@ -23,6 +23,7 @@
             <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Invert="True"/>
             <conv:StringToVisibilityConverter x:Key="StringToVisibility"/>
             <conv:PageStateToVisibilityConverter x:Key="ReadyStateToVisibility"/>
+            <conv:FractionToWidthConverter x:Key="FractionToWidth"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

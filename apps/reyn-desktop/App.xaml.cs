@@ -6,16 +6,20 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Reyn.Application.Abstractions;
 using Reyn.Application.Auth;
+using Reyn.Application.Ingestion;
+using Reyn.Application.Queries;
 using Reyn.Application.Sync;
 using Reyn.Desktop.ViewModels;
+using Reyn.Desktop.ViewModels.Overlay;
 using Reyn.Desktop.ViewModels.Shell;
 using Reyn.Desktop.Views.Auth;
+using Reyn.Desktop.Views.Overlay;
 using Reyn.Desktop.Views.Shell;
 using Reyn.Desktop.Views.Splash;
-using Reyn.Application.Queries;
 using Reyn.Infrastructure.Auth;
 using Reyn.Infrastructure.Demo;
 using Reyn.Infrastructure.Http;
+using Reyn.Infrastructure.Ingestion;
 using Reyn.Infrastructure.Persistence;
 using Reyn.Infrastructure.Queries;
 using Reyn.Infrastructure.Sync;
@@ -28,6 +32,8 @@ public partial class App
 
     private IHost? _host;
     private SplashWindow? _splash;
+    private OverlayWindow? _overlay;
+    private bool _forceOverlayVisible;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -54,6 +60,7 @@ public partial class App
             using var seedScope = Services.CreateScope();
             var seeder = seedScope.ServiceProvider.GetRequiredService<DemoDataSeeder>();
             await seeder.SeedAsync(CancellationToken.None).ConfigureAwait(true);
+            _forceOverlayVisible = true;
         }
 #endif
 
@@ -78,13 +85,54 @@ public partial class App
         _splash = null;
 
         MainWindow = initialWindow;
+
+        WireOverlayLifecycle();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _overlay?.Close();
         _host?.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
         _host?.Dispose();
         base.OnExit(e);
+    }
+
+    /// <summary>
+    /// Per the AskUserQuestion answer, the overlay shows only while BG3 is
+    /// running. The publisher fires on a 2s cadence (Bg3ProcessDetectorService);
+    /// each state change runs through this on the Dispatcher to show/hide
+    /// the click-through HUD window.
+    ///
+    /// <c>--demo-mode</c> forces the overlay visible at startup so FlaUI can
+    /// screenshot it without needing a live BG3 process.
+    /// </summary>
+    private void WireOverlayLifecycle()
+    {
+        var detection = Services.GetRequiredService<IBg3DetectionPublisher>();
+        detection.Changed += (_, state) => Dispatcher.Invoke(() => ApplyOverlayVisibility(state.IsDetected));
+
+        if (_forceOverlayVisible || detection.Current.IsDetected)
+        {
+            ApplyOverlayVisibility(true);
+        }
+    }
+
+    private void ApplyOverlayVisibility(bool visible)
+    {
+        if (visible)
+        {
+            if (_overlay is null)
+            {
+                _overlay = Services.GetRequiredService<OverlayWindow>();
+                _overlay.Closed += (_, _) => _overlay = null;
+                _overlay.Show();
+            }
+        }
+        else if (_overlay is not null && !_forceOverlayVisible)
+        {
+            _overlay.Close();
+            _overlay = null;
+        }
     }
 
     /// <summary>
@@ -154,7 +202,7 @@ public partial class App
         auth?.Close();
     }
 
-    private static void ConfigureServices(HostBuilderContext _, IServiceCollection services)
+    private void ConfigureServices(HostBuilderContext _, IServiceCollection services)
     {
         services.AddSingleton<OutboxEnqueuingInterceptor>();
 
@@ -188,6 +236,9 @@ public partial class App
 
         services.AddHostedService<OutboxProcessor>();
 
+        // Phase 9 — ingestion + detection.
+        ConfigureIngestionServices(services);
+
         services.AddTransient<LoginViewModel>();
         services.AddTransient<RegisterViewModel>();
         services.AddTransient<AuthShellViewModel>();
@@ -206,8 +257,32 @@ public partial class App
         services.AddTransient<SplashWindow>();
         services.AddTransient<AuthShellWindow>();
         services.AddTransient<MainShell>();
-        // MainWindow is the legacy overlay; Phase 9 reworks it into
-        // OverlayWindow. Kept in DI so existing references still resolve.
-        services.AddTransient<MainWindow>();
+
+        services.AddSingleton<OverlayViewModel>();
+        services.AddSingleton<OverlayWindow>();
+    }
+
+    private static void ConfigureIngestionServices(IServiceCollection services)
+    {
+        services.AddSingleton<IGameDetector, Bg3ProcessDetector>();
+        services.AddSingleton<Bg3DetectionPublisher>();
+        services.AddSingleton<IBg3DetectionPublisher>(sp => sp.GetRequiredService<Bg3DetectionPublisher>());
+        services.AddSingleton<IBg3DetectionWriter>(sp => sp.GetRequiredService<Bg3DetectionPublisher>());
+        services.Configure<Bg3DetectionOptions>(_ => { });
+        services.AddHostedService<Bg3ProcessDetectorService>();
+
+        services.Configure<MockEventGeneratorOptions>(_ => { });
+
+#if DEBUG
+        // In demo mode, run the mock generator instead of the real socket
+        // source so the overlay ticker has events to display without a
+        // BG3SE Lua mod connecting.
+        if (Environment.GetCommandLineArgs().Contains("--demo-mode", StringComparer.OrdinalIgnoreCase))
+        {
+            services.AddSingleton<IGameEventSource, MockBg3EventGenerator>();
+            return;
+        }
+#endif
+        services.AddSingleton<IGameEventSource, Bg3SocketEventSource>();
     }
 }

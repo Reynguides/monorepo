@@ -12,8 +12,10 @@ obj/
 *.userosscache
 *.sln.docstates
 
-# NuGet (legacy packages folder; CPM is in Directory.Packages.props)
-packages/
+# NuGet legacy `packages/` folder is no longer used (CPM is in
+# Directory.Packages.props). `packages/` is now the pnpm workspace dir;
+# files there should be tracked. Only the per-package node_modules is
+# ignored (via the global rule below).
 
 # Logs
 *.log
