@@ -1,9 +1,10 @@
 <Application x:Class="Reyn.Desktop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Reyn.Desktop"
-             StartupUri="MainWindow.xaml">
+             xmlns:conv="clr-namespace:Reyn.Desktop.Converters">
     <Application.Resources>
-
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Invert="True"/>
+        <conv:StringToVisibilityConverter x:Key="StringToVisibility"/>
     </Application.Resources>
 </Application>

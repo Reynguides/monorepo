@@ -1,14 +1,19 @@
+using System.Reflection;
+using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Reyn.Application.Abstractions;
+using Reyn.Application.Auth;
 using Reyn.Application.Sync;
+using Reyn.Desktop.ViewModels;
+using Reyn.Desktop.Views.Auth;
+using Reyn.Desktop.Views.Splash;
 using Reyn.Infrastructure.Auth;
 using Reyn.Infrastructure.Http;
 using Reyn.Infrastructure.Persistence;
 using Reyn.Infrastructure.Sync;
-using System.Windows;
 
 namespace Reyn.Desktop;
 
@@ -17,8 +22,9 @@ public partial class App
     public static IServiceProvider Services { get; private set; } = null!;
 
     private IHost? _host;
+    private SplashWindow? _splash;
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         _host = Host.CreateDefaultBuilder()
             .ConfigureLogging(lb => lb.ClearProviders())
@@ -33,9 +39,27 @@ public partial class App
             db.Database.Migrate();
         }
 
-        _host.Start();
+        await _host.StartAsync().ConfigureAwait(true);
 
         base.OnStartup(e);
+
+        _splash = Services.GetRequiredService<SplashWindow>();
+        _splash.Show();
+
+        // --screenshot-mode holds the splash so FlaUI can capture it. The
+        // splash is otherwise dismissed in <100ms on cold start, which is
+        // too fast to race with UI automation.
+        if (e.Args.Contains("--screenshot-mode", StringComparer.OrdinalIgnoreCase))
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(true);
+        }
+
+        var initialWindow = await ChooseInitialWindowAsync().ConfigureAwait(true);
+        initialWindow.Show();
+        _splash.Close();
+        _splash = null;
+
+        MainWindow = initialWindow;
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -43,6 +67,57 @@ public partial class App
         _host?.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
         _host?.Dispose();
         base.OnExit(e);
+    }
+
+    /// <summary>
+    /// Splash → session check → AuthShell (cold start or 401) or MainWindow
+    /// (verified session). Per the user-confirmed UX, the AuthShell defaults
+    /// to LoginView. AuthShellViewModel raises AuthSucceeded to swap.
+    /// </summary>
+    private async Task<Window> ChooseInitialWindowAsync()
+    {
+        var tokens = Services.GetRequiredService<IAuthTokenStore>();
+        var stored = await tokens.LoadAsync(CancellationToken.None).ConfigureAwait(true);
+        if (stored is null || stored.ExpiresAt <= DateTime.UtcNow)
+        {
+            return BuildAuthShell();
+        }
+        try
+        {
+            var client = Services.GetRequiredService<IAuthClient>();
+            var me = await client.GetCurrentUserAsync(stored.Token, CancellationToken.None).ConfigureAwait(true);
+            if (me is null)
+            {
+                await tokens.ClearAsync(CancellationToken.None).ConfigureAwait(true);
+                return BuildAuthShell();
+            }
+            return Services.GetRequiredService<MainWindow>();
+        }
+        catch (AuthException)
+        {
+            return BuildAuthShell();
+        }
+    }
+
+    private AuthShellWindow BuildAuthShell()
+    {
+        var shell = Services.GetRequiredService<AuthShellWindow>();
+        var vm = (AuthShellViewModel)shell.DataContext;
+        vm.AuthSucceeded += OnAuthSucceeded;
+        return shell;
+    }
+
+    private void OnAuthSucceeded(object? sender, AuthResult result)
+    {
+        if (sender is AuthShellViewModel vm)
+        {
+            vm.AuthSucceeded -= OnAuthSucceeded;
+        }
+        var main = Services.GetRequiredService<MainWindow>();
+        main.Show();
+        var auth = MainWindow;
+        MainWindow = main;
+        auth?.Close();
     }
 
     private static void ConfigureServices(HostBuilderContext _, IServiceCollection services)
@@ -59,12 +134,26 @@ public partial class App
         services.AddSingleton<ISyncStatusPublisher>(sp => sp.GetRequiredService<EventSyncStatusPublisher>());
         services.AddSingleton<ISyncStatusWriter>(sp => sp.GetRequiredService<EventSyncStatusPublisher>());
 
-        services.AddSingleton<StaticAuthTokenSource>();
-        services.AddSingleton<IAuthTokenSource>(sp => sp.GetRequiredService<StaticAuthTokenSource>());
+        services.AddSingleton<DpapiTokenStore>();
+        services.AddSingleton<IAuthTokenSource>(sp => sp.GetRequiredService<DpapiTokenStore>());
+        services.AddSingleton<IAuthTokenStore>(sp => sp.GetRequiredService<DpapiTokenStore>());
 
         services.Configure<SyncOptions>(_ => { });
         services.AddHttpClient<IEventSyncClient, HttpEventSyncClient>();
+        services.AddHttpClient<IAuthClient, HttpAuthClient>();
 
         services.AddHostedService<OutboxProcessor>();
+
+        services.AddTransient<LoginViewModel>();
+        services.AddTransient<RegisterViewModel>();
+        services.AddTransient<AuthShellViewModel>();
+        services.AddTransient(_ => new SplashViewModel
+        {
+            Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0",
+        });
+
+        services.AddTransient<SplashWindow>();
+        services.AddTransient<AuthShellWindow>();
+        services.AddTransient<MainWindow>();
     }
 }

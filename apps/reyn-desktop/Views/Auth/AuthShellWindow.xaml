@@ -1,0 +1,57 @@
+<Window x:Class="Reyn.Desktop.Views.Auth.AuthShellWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:auth="clr-namespace:Reyn.Desktop.Views.Auth"
+        Title="Reyn"
+        Width="480" Height="540"
+        WindowStartupLocation="CenterScreen"
+        Background="#FF15151B"
+        ResizeMode="NoResize">
+    <Grid Margin="32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Reyn"
+                   FontSize="32"
+                   FontWeight="SemiBold"
+                   Foreground="#FFE6E6F0"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,18,0,18">
+            <Button Content="Sign in"
+                    Command="{Binding ShowLoginCommand}"
+                    AutomationProperties.AutomationId="ShowLoginButton"
+                    Padding="14,6"
+                    Background="Transparent"
+                    Foreground="#FFE6E6F0"
+                    BorderBrush="#FF3A3A4A"
+                    BorderThickness="0,0,0,2"/>
+            <Button Content="Create account"
+                    Command="{Binding ShowRegisterCommand}"
+                    AutomationProperties.AutomationId="ShowRegisterButton"
+                    Padding="14,6"
+                    Background="Transparent"
+                    Foreground="#FFB4B4C7"
+                    BorderBrush="Transparent"
+                    Margin="12,0,0,0"/>
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <auth:LoginView DataContext="{Binding Login}"
+                            Visibility="{Binding DataContext.IsLoginActive, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}"/>
+            <auth:RegisterView DataContext="{Binding Register}"
+                               Visibility="{Binding DataContext.IsLoginActive, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}"/>
+        </Grid>
+
+        <TextBlock Grid.Row="3"
+                   Text="Local data stays on this machine. Sync is opt-in via account login."
+                   Foreground="#FF6C6C82"
+                   FontSize="11"
+                   TextWrapping="Wrap"
+                   Margin="0,16,0,0"/>
+    </Grid>
+</Window>

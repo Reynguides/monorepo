@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\src\Reyn.Application\Reyn.Application.csproj" />
     <ProjectReference Include="..\..\src\Reyn.Infrastructure\Reyn.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Reyn.Contracts\Reyn.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Reyn.Desktop.ViewModels\Reyn.Desktop.ViewModels.csproj" />
   </ItemGroup>
 
   <ItemGroup>
