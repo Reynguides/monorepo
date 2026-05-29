@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{ECEC1D4C-C663-455A-823C-EE404AD060BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reyn.Domain", "src\Reyn.Domain\Reyn.Domain.csproj", "{AD1CC126-6063-47DE-B94F-DFBB0937A914}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reyn.Contracts", "src\Reyn.Contracts\Reyn.Contracts.csproj", "{F3C839B7-4371-441B-BA3F-BA11B044369F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reyn.Application", "src\Reyn.Application\Reyn.Application.csproj", "{3F94E058-BC95-444A-9337-B255A3864282}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reyn.Infrastructure", "src\Reyn.Infrastructure\Reyn.Infrastructure.csproj", "{F799115F-BE88-4244-B075-E12BA1C2A212}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "apps", "apps", "{57906F7B-2E79-4A44-B287-B4951A9A4E8A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reyn.Desktop", "apps\reyn-desktop\Reyn.Desktop.csproj", "{BC15AC2B-E8F3-48F6-8542-7E2403AA28D7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AD1CC126-6063-47DE-B94F-DFBB0937A914}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD1CC126-6063-47DE-B94F-DFBB0937A914}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD1CC126-6063-47DE-B94F-DFBB0937A914}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD1CC126-6063-47DE-B94F-DFBB0937A914}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3C839B7-4371-441B-BA3F-BA11B044369F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3C839B7-4371-441B-BA3F-BA11B044369F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3C839B7-4371-441B-BA3F-BA11B044369F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3C839B7-4371-441B-BA3F-BA11B044369F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F94E058-BC95-444A-9337-B255A3864282}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F94E058-BC95-444A-9337-B255A3864282}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F94E058-BC95-444A-9337-B255A3864282}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F94E058-BC95-444A-9337-B255A3864282}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F799115F-BE88-4244-B075-E12BA1C2A212}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F799115F-BE88-4244-B075-E12BA1C2A212}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F799115F-BE88-4244-B075-E12BA1C2A212}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F799115F-BE88-4244-B075-E12BA1C2A212}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC15AC2B-E8F3-48F6-8542-7E2403AA28D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC15AC2B-E8F3-48F6-8542-7E2403AA28D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC15AC2B-E8F3-48F6-8542-7E2403AA28D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC15AC2B-E8F3-48F6-8542-7E2403AA28D7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AD1CC126-6063-47DE-B94F-DFBB0937A914} = {ECEC1D4C-C663-455A-823C-EE404AD060BE}
+		{F3C839B7-4371-441B-BA3F-BA11B044369F} = {ECEC1D4C-C663-455A-823C-EE404AD060BE}
+		{3F94E058-BC95-444A-9337-B255A3864282} = {ECEC1D4C-C663-455A-823C-EE404AD060BE}
+		{F799115F-BE88-4244-B075-E12BA1C2A212} = {ECEC1D4C-C663-455A-823C-EE404AD060BE}
+		{BC15AC2B-E8F3-48F6-8542-7E2403AA28D7} = {57906F7B-2E79-4A44-B287-B4951A9A4E8A}
+	EndGlobalSection
+EndGlobal

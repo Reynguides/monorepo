@@ -1,0 +1,20 @@
+# Normalize line endings — commit LF, check out OS-native.
+* text=auto eol=lf
+
+# Force LF in scripts that may be run on Windows under WSL or CI Linux runners.
+*.sh text eol=lf
+*.ps1 text eol=crlf
+
+# Binary files (no diff/merge)
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.dll binary
+*.exe binary
+*.db binary
+
+# Generated content — collapse in PR diffs
+pnpm-lock.yaml linguist-generated=true
+**/*.g.cs linguist-generated=true
+**/*.g.i.cs linguist-generated=true

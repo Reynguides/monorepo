@@ -1,10 +1,10 @@
-# Visual Studio
+# Visual Studio / Rider
 .vs/
+.idea/
+
+# Build output
 bin/
 obj/
-
-# Rider
-.idea/
 
 # User files
 *.user
@@ -12,8 +12,38 @@ obj/
 *.userosscache
 *.sln.docstates
 
-# NuGet
+# NuGet (legacy packages folder; CPM is in Directory.Packages.props)
 packages/
 
 # Logs
 *.log
+
+# Local databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Test / coverage artefacts
+coverage/
+TestResults/
+**/coverage.cobertura.xml
+**/coverage.opencover.xml
+
+# Node / pnpm
+node_modules/
+.pnpm-store/
+
+# Wrangler / Cloudflare local dev
+.wrangler/
+.dev.vars
+.dev.vars.*
+
+# Local secrets / env
+.env
+.env.local
+.env.*.local
+
+# OS detritus
+Thumbs.db
+.DS_Store

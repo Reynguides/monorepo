@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>Reyn.Desktop</RootNamespace>
+    <AssemblyName>Reyn.Desktop</AssemblyName>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Reyn.Application\Reyn.Application.csproj" />
+    <ProjectReference Include="..\..\src\Reyn.Infrastructure\Reyn.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Reyn.Contracts\Reyn.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+</Project>

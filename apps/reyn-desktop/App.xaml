@@ -1,9 +1,9 @@
-﻿<Application x:Class="Overlay_in_game_WPF.App"
+<Application x:Class="Reyn.Desktop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Overlay_in_game_WPF"
+             xmlns:local="clr-namespace:Reyn.Desktop"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+
     </Application.Resources>
 </Application>

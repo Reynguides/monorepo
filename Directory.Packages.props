@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    Central Package Management. Every <PackageReference> in every csproj
+    resolves its version from here. Per ADR-0009.
+    Phase 1 lists only packages the live code path currently uses.
+  -->
+
+  <ItemGroup>
+    <!-- EF Core (Phase 2 will extend with Tools + Design) -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.27" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.27" />
+
+    <!-- HttpClient factory -->
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+  </ItemGroup>
+
+</Project>
