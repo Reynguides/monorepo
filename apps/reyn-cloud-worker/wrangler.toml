@@ -1,0 +1,24 @@
+name = "reyn-cloud-worker"
+main = "src/index.ts"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Per ADR-0002: this is the shared Accounts D1 (`reyn_accounts`).
+# Per-user D1s are created dynamically via the Cloudflare REST API in Phase 4
+# and are NOT bound here — they're queried via REST at request time.
+[[d1_databases]]
+binding = "ACCOUNTS_DB"
+database_name = "reyn_accounts"
+# Created 2026-05-29 via Cloudflare MCP (account 2037a707…1, region WEUR).
+database_id = "66c23739-91b7-483b-85fc-dd02ff0bf9d9"
+migrations_dir = "../../migrations/accounts-d1"
+
+[vars]
+# Default provisioner mode per ADR-0002. Override per-environment with
+# `wrangler deploy --env <name>` once Phase 4 needs `dedicated`.
+PROVISIONER = "shared"
+
+# Required secrets (set with `wrangler secret put <NAME>`):
+# - SESSION_PEPPER  : 32+ random bytes hex. Hashed into every stored token.
+# - CF_API_TOKEN    : Account-scoped token with `Account → Cloudflare D1 → Edit`. Phase 4.
+# - CF_ACCOUNT_ID   : Cloudflare account ID for per-user D1 REST API. Phase 4.
