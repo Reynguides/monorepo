@@ -78,16 +78,21 @@ public partial class App
     ///
     /// The <c>--skip-auth</c> flag short-circuits straight to MainShell. It
     /// exists so FlaUI navigation tests can exercise the post-auth UI
-    /// without needing a live Worker. Phase 11 will replace it with a
-    /// proper integration harness (likely a mock Worker via WireMock + a
-    /// test-only token store).
+    /// without needing a live Worker. Gated behind <c>#if DEBUG</c> so the
+    /// branch is stripped from release builds — an auth-bypass code path
+    /// MUST NOT exist in shipped binaries even if its functional impact is
+    /// small (sync still rejects without a real token). Phase 11 will
+    /// replace this with a WireMock-backed integration harness so the flag
+    /// can be removed outright.
     /// </summary>
     private async Task<Window> ChooseInitialWindowAsync()
     {
+#if DEBUG
         if (Environment.GetCommandLineArgs().Contains("--skip-auth", StringComparer.OrdinalIgnoreCase))
         {
             return Services.GetRequiredService<MainShell>();
         }
+#endif
 
         var tokens = Services.GetRequiredService<IAuthTokenStore>();
         var stored = await tokens.LoadAsync(CancellationToken.None).ConfigureAwait(true);
