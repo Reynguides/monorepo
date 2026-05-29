@@ -28,6 +28,10 @@ obj/
 
 # Test / coverage artefacts
 coverage/
+# tools/coverage/ holds the cobertura runsettings file checked into
+# the repo (used by the CI .NET job). The broad `coverage/` pattern
+# above would otherwise swallow it.
+!tools/coverage/
 coverage-out/
 TestResults/
 **/coverage.cobertura.xml

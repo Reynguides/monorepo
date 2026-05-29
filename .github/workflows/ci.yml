@@ -30,7 +30,11 @@ jobs:
         run: dotnet restore Reyn.sln
 
       - name: Build (warnaserror)
-        run: dotnet build Reyn.sln --configuration Release --no-restore -warnaserror
+        # Configuration intentionally left as the SDK default (Debug). The
+        # plan's DoD command is `dotnet build Reyn.sln -warnaserror`; the
+        # FlaUI fixture's exe-locator and the local verification both
+        # operate in Debug, so the CI build matches what was verified.
+        run: dotnet build Reyn.sln --no-restore -warnaserror
 
       - name: Test with coverage
         # FlaUI tests need a real interactive desktop, which `windows-latest`
@@ -38,7 +42,6 @@ jobs:
         # TestResults/**/coverage.cobertura.xml.
         run: >
           dotnet test Reyn.sln
-          --configuration Release
           --no-build
           --settings tools/coverage/coverlet.runsettings
           --logger "trx;LogFileName=test-results.trx"
@@ -169,9 +172,13 @@ jobs:
 
       - name: Markdown link check
         # Lychee is fast and respects relative paths. Failure exits non-zero.
+        # --accept '200,203,206,403': some auth-walled URLs (notably the
+        # Cloudflare dashboard at dash.cloudflare.com/profile/api-tokens)
+        # return 403 to unauthenticated bots even though the link itself is
+        # valid; treat 403 as a pass to avoid false positives on those.
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --max-concurrency 4 'docs/**/*.md' 'CLAUDE.md' 'README.md' 'apps/reyn-bg3-mod/README.md'
+          args: --no-progress --max-concurrency 4 --accept '200,203,206,403' 'docs/**/*.md' 'CLAUDE.md' 'README.md' 'apps/reyn-bg3-mod/README.md'
           fail: true
 
       - name: Spell check (cspell)

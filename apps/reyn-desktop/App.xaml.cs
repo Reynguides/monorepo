@@ -38,7 +38,17 @@ public partial class App
     private IHost? _host;
     private SplashWindow? _splash;
     private OverlayWindow? _overlay;
+
+    // `_forceOverlayVisible` is only ever assigned from the --demo-mode branch
+    // below, which is itself #if DEBUG-gated. In Release the field would be
+    // declared but never written → CS0649 under -warnaserror. Folding it to a
+    // compile-time `const false` in Release lets the read sites stay verbatim
+    // while the JIT drops the always-false branches.
+#if DEBUG
     private bool _forceOverlayVisible;
+#else
+    private const bool _forceOverlayVisible = false;
+#endif
 
     protected override async void OnStartup(StartupEventArgs e)
     {
