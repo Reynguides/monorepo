@@ -8,7 +8,9 @@ using Reyn.Application.Abstractions;
 using Reyn.Application.Auth;
 using Reyn.Application.Sync;
 using Reyn.Desktop.ViewModels;
+using Reyn.Desktop.ViewModels.Shell;
 using Reyn.Desktop.Views.Auth;
+using Reyn.Desktop.Views.Shell;
 using Reyn.Desktop.Views.Splash;
 using Reyn.Infrastructure.Auth;
 using Reyn.Infrastructure.Http;
@@ -70,12 +72,23 @@ public partial class App
     }
 
     /// <summary>
-    /// Splash → session check → AuthShell (cold start or 401) or MainWindow
+    /// Splash → session check → AuthShell (cold start or 401) or MainShell
     /// (verified session). Per the user-confirmed UX, the AuthShell defaults
     /// to LoginView. AuthShellViewModel raises AuthSucceeded to swap.
+    ///
+    /// The <c>--skip-auth</c> flag short-circuits straight to MainShell. It
+    /// exists so FlaUI navigation tests can exercise the post-auth UI
+    /// without needing a live Worker. Phase 11 will replace it with a
+    /// proper integration harness (likely a mock Worker via WireMock + a
+    /// test-only token store).
     /// </summary>
     private async Task<Window> ChooseInitialWindowAsync()
     {
+        if (Environment.GetCommandLineArgs().Contains("--skip-auth", StringComparer.OrdinalIgnoreCase))
+        {
+            return Services.GetRequiredService<MainShell>();
+        }
+
         var tokens = Services.GetRequiredService<IAuthTokenStore>();
         var stored = await tokens.LoadAsync(CancellationToken.None).ConfigureAwait(true);
         if (stored is null || stored.ExpiresAt <= DateTime.UtcNow)
@@ -91,7 +104,7 @@ public partial class App
                 await tokens.ClearAsync(CancellationToken.None).ConfigureAwait(true);
                 return BuildAuthShell();
             }
-            return Services.GetRequiredService<MainWindow>();
+            return Services.GetRequiredService<MainShell>();
         }
         catch (AuthException)
         {
@@ -113,7 +126,7 @@ public partial class App
         {
             vm.AuthSucceeded -= OnAuthSucceeded;
         }
-        var main = Services.GetRequiredService<MainWindow>();
+        var main = Services.GetRequiredService<MainShell>();
         main.Show();
         var auth = MainWindow;
         MainWindow = main;
@@ -152,8 +165,18 @@ public partial class App
             Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0",
         });
 
+        services.AddTransient<DashboardViewModel>();
+        services.AddTransient<TimelineViewModel>();
+        services.AddTransient<AchievementsViewModel>();
+        services.AddTransient<EventsViewModel>();
+        services.AddTransient<SettingsViewModel>();
+        services.AddTransient<MainShellViewModel>();
+
         services.AddTransient<SplashWindow>();
         services.AddTransient<AuthShellWindow>();
+        services.AddTransient<MainShell>();
+        // MainWindow is the legacy overlay; Phase 9 reworks it into
+        // OverlayWindow. Kept in DI so existing references still resolve.
         services.AddTransient<MainWindow>();
     }
 }

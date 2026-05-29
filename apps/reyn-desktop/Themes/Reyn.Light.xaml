@@ -1,0 +1,24 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Resources/Brushes.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+    <SolidColorBrush x:Key="BackgroundBrush"            Color="{StaticResource LightBg0}"/>
+    <SolidColorBrush x:Key="SurfaceBrush"               Color="{StaticResource LightBg1}"/>
+    <SolidColorBrush x:Key="ElevatedSurfaceBrush"       Color="{StaticResource LightBg2}"/>
+    <SolidColorBrush x:Key="InputBackgroundBrush"       Color="{StaticResource LightBg3}"/>
+    <SolidColorBrush x:Key="DividerBrush"               Color="{StaticResource LightBorder}"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush"           Color="{StaticResource LightFg0}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush"         Color="{StaticResource LightFg1}"/>
+    <SolidColorBrush x:Key="TextTertiaryBrush"          Color="{StaticResource LightFg2}"/>
+
+    <SolidColorBrush x:Key="AccentBrush"                Color="{StaticResource AmberMuted}"/>
+    <SolidColorBrush x:Key="AccentMutedBrush"           Color="{StaticResource Amber}"/>
+    <SolidColorBrush x:Key="DangerBrush"                Color="{StaticResource DangerRed}"/>
+    <SolidColorBrush x:Key="DangerBackgroundBrush"      Color="#FFFBE0E2"/>
+    <SolidColorBrush x:Key="SuccessBrush"               Color="{StaticResource SuccessGreen}"/>
+    <SolidColorBrush x:Key="WarningBrush"               Color="{StaticResource WarningGold}"/>
+
+</ResourceDictionary>

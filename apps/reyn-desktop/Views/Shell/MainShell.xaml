@@ -1,0 +1,149 @@
+<Window x:Class="Reyn.Desktop.Views.Shell.MainShell"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:Reyn.Desktop.Views.Shell"
+        Title="Reyn"
+        Width="1180" Height="760"
+        MinWidth="960" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BackgroundBrush}"
+        AutomationProperties.AutomationId="MainShellWindow">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- NAV RAIL -->
+        <Border Grid.Column="0"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="20,24,20,16">
+                    <TextBlock Text="Reyn"
+                               Style="{StaticResource DisplayText}"
+                               Foreground="{DynamicResource AccentBrush}"/>
+                    <TextBlock Text="Baldur's Gate 3 companion"
+                               Style="{StaticResource CaptionText}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding Sections}"
+                         SelectedItem="{Binding SelectedSection}"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Padding="8,0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Padding" Value="14,10"/>
+                            <Setter Property="Margin" Value="0,2"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="ItemBorder"
+                                                Background="{TemplateBinding Background}"
+                                                CornerRadius="{StaticResource RadiusSm}"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" TargetName="ItemBorder" Value="{DynamicResource ElevatedSurfaceBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" TargetName="ItemBorder" Value="{DynamicResource ElevatedSurfaceBrush}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}"
+                                       AutomationProperties.AutomationId="{Binding AutomationId}"
+                                       Style="{StaticResource BodyText}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- CONTENT + TOP BAR -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top bar with sync badge -->
+            <Border Grid.Row="0"
+                    Background="{DynamicResource BackgroundBrush}"
+                    BorderBrush="{DynamicResource DividerBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="20,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding ActivePage.Title}"
+                               Style="{StaticResource HeadingText}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"/>
+
+                    <Button Grid.Column="1"
+                            Command="{Binding OpenSyncSettingsCommand}"
+                            AutomationProperties.AutomationId="SyncBadge"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            Padding="8,4">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="10" Height="10"
+                                     Fill="{DynamicResource SuccessBrush}"
+                                     VerticalAlignment="Center"/>
+                            <TextBlock Text="Sync"
+                                       Style="{StaticResource BodyText}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0"/>
+                            <TextBlock Text="{Binding SyncStatus.PendingCount, StringFormat=' · {0} pending'}"
+                                       Style="{StaticResource CaptionText}"
+                                       Foreground="{DynamicResource TextTertiaryBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0,0,0"
+                                       AutomationProperties.AutomationId="SyncBadgePending"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <ContentControl Grid.Row="1"
+                            Content="{Binding ActivePage}">
+                <ContentControl.ContentTemplate>
+                    <DataTemplate>
+                        <shell:PageView/>
+                    </DataTemplate>
+                </ContentControl.ContentTemplate>
+            </ContentControl>
+        </Grid>
+    </Grid>
+</Window>

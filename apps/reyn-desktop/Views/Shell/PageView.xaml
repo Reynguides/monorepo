@@ -1,0 +1,27 @@
+<UserControl x:Class="Reyn.Desktop.Views.Shell.PageView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Reyn.Desktop.Views.Shell.Controls">
+    <Grid Margin="{StaticResource ThicknessLg}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding Title}"
+                   Style="{StaticResource TitleText}"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   AutomationProperties.AutomationId="PageTitle"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="{Binding Subtitle}"
+                   Style="{StaticResource BodyText}"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   Margin="0,4,0,16"
+                   TextWrapping="Wrap"/>
+
+        <controls:PageStateControl Grid.Row="2" DataContext="{Binding}"/>
+    </Grid>
+</UserControl>

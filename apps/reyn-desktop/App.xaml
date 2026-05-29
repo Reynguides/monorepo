@@ -3,8 +3,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:conv="clr-namespace:Reyn.Desktop.Converters">
     <Application.Resources>
-        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
-        <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Invert="True"/>
-        <conv:StringToVisibilityConverter x:Key="StringToVisibility"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Design tokens. Brushes is merged transitively via the theme dict. -->
+                <ResourceDictionary Source="/Resources/Spacing.xaml"/>
+                <ResourceDictionary Source="/Resources/Shadows.xaml"/>
+                <ResourceDictionary Source="/Resources/Typography.xaml"/>
+
+                <!-- Default theme. Phase 7 ships dark first per AskUserQuestion. -->
+                <ResourceDictionary Source="/Themes/Reyn.Dark.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+            <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Invert="True"/>
+            <conv:StringToVisibilityConverter x:Key="StringToVisibility"/>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

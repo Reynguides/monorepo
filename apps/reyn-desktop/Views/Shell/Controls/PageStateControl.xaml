@@ -1,0 +1,86 @@
+<UserControl x:Class="Reyn.Desktop.Views.Shell.Controls.PageStateControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Reyn.Desktop.ViewModels.Shell;assembly=Reyn.Desktop.ViewModels">
+
+    <UserControl.Resources>
+        <vm:PageState x:Key="StateLoading">Loading</vm:PageState>
+        <vm:PageState x:Key="StateEmpty">Empty</vm:PageState>
+        <vm:PageState x:Key="StateError">Error</vm:PageState>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- LOADING -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Visibility="Collapsed"
+                    x:Name="LoadingPanel">
+            <ProgressBar IsIndeterminate="True"
+                         Width="180" Height="3"
+                         Foreground="{DynamicResource AccentBrush}"
+                         Background="{DynamicResource DividerBrush}"
+                         BorderThickness="0"/>
+            <TextBlock Text="Loading…"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       Margin="0,12,0,0"
+                       HorizontalAlignment="Center"
+                       Style="{StaticResource BodyText}"/>
+        </StackPanel>
+
+        <!-- EMPTY -->
+        <Border Visibility="Collapsed"
+                x:Name="EmptyPanel"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource RadiusLg}"
+                Padding="{StaticResource ThicknessLg}"
+                MaxWidth="520"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                AutomationProperties.AutomationId="EmptyState">
+            <StackPanel>
+                <TextBlock Text="Nothing here yet"
+                           Style="{StaticResource HeadingText}"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding Subtitle}"
+                           Style="{StaticResource BodyText}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Margin="0,8,0,0"/>
+                <TextBlock Text="Start a Baldur's Gate 3 session to see your activity appear here."
+                           Style="{StaticResource CaptionText}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Margin="0,12,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ERROR -->
+        <Border Visibility="Collapsed"
+                x:Name="ErrorPanel"
+                Background="{DynamicResource DangerBackgroundBrush}"
+                BorderBrush="{DynamicResource DangerBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource RadiusMd}"
+                Padding="{StaticResource ThicknessMd}"
+                MaxWidth="520"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+            <StackPanel>
+                <TextBlock Text="Something went wrong"
+                           Style="{StaticResource HeadingText}"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Style="{StaticResource BodyText}"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Margin="0,8,0,0"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
