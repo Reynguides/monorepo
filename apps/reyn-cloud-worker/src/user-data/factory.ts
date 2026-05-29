@@ -12,10 +12,7 @@ import { UserDatabaseClientError, type IUserDatabaseClient } from "./types.ts";
  * Throws `UserDatabaseClientError` fail-fast when the chosen mode is missing
  * its required configuration, mirroring the provisioning factory's contract.
  */
-export function createUserDatabaseClient(
-  env: Env,
-  databaseId: string,
-): IUserDatabaseClient {
+export function createUserDatabaseClient(env: Env, databaseId: string): IUserDatabaseClient {
   switch (env.PROVISIONER) {
     case "mock":
       return new MockUserDatabaseClient();

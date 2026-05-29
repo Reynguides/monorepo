@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using System.Windows.Threading;
 using Reyn.Application.Ingestion;
@@ -11,6 +11,7 @@ namespace Reyn.Desktop.Views.Overlay;
 // but that's not the WPF convention for windows.
 [SuppressMessage("Reliability", "CA1001:Types that own disposable fields should be disposable",
     Justification = "Disposed deterministically in the Closed event handler")]
+[ExcludeFromCodeCoverage]
 public partial class OverlayWindow : Window
 {
     private readonly OverlayViewModel _viewModel;

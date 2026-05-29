@@ -45,11 +45,7 @@ export async function verifyPassword(plain: string, encoded: string): Promise<bo
   return constantTimeEqual(actual, expected);
 }
 
-async function derive(
-  password: string,
-  salt: Uint8Array,
-  iterations: number,
-): Promise<Uint8Array> {
+async function derive(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password),

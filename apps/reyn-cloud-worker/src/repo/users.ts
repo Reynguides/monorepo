@@ -16,10 +16,7 @@ export interface NewUser {
   password_hash: string;
 }
 
-export async function findUserByEmail(
-  db: D1Database,
-  email: string,
-): Promise<UserRow | null> {
+export async function findUserByEmail(db: D1Database, email: string): Promise<UserRow | null> {
   const row = await db
     .prepare("SELECT id, email, password_hash, created_at, updated_at FROM users WHERE email = ?")
     .bind(email)

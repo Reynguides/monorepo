@@ -70,9 +70,9 @@ describe("RestUserDatabaseClient", () => {
   });
 
   it("throws on success:false body", async () => {
-    const fetcher = vi.fn().mockResolvedValue(
-      jsonResponse({ success: false, errors: [{ code: 1, message: "bad" }] }),
-    );
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ success: false, errors: [{ code: 1, message: "bad" }] }));
     const client = makeClient(fetcher);
     await expect(client.insertEvents([insertRow()])).rejects.toBeInstanceOf(
       UserDatabaseClientError,
@@ -120,9 +120,9 @@ describe("RestUserDatabaseClient", () => {
   });
 
   it("listEventsSince returns nextCursor=null when fewer rows than limit", async () => {
-    const fetcher = vi.fn().mockResolvedValue(
-      jsonResponse({ success: true, result: [{ results: [] }] }),
-    );
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ success: true, result: [{ results: [] }] }));
     const client = makeClient(fetcher);
     const page = await client.listEventsSince("u1", 5, 100);
     expect(page.items).toHaveLength(0);
@@ -137,14 +137,12 @@ describe("RestUserDatabaseClient", () => {
   });
 
   it("findIdempotentResponse returns the cached string", async () => {
-    const fetcher = vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse({
-          success: true,
-          result: [{ results: [{ response_json: '{"a":1}' }] }],
-        }),
-      );
+    const fetcher = vi.fn().mockResolvedValue(
+      jsonResponse({
+        success: true,
+        result: [{ results: [{ response_json: '{"a":1}' }] }],
+      }),
+    );
     const client = makeClient(fetcher);
     expect(await client.findIdempotentResponse("u", "k")).toBe('{"a":1}');
   });

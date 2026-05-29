@@ -1,9 +1,11 @@
-using System.Windows;
+﻿using System.Windows;
+using System.Diagnostics.CodeAnalysis;
 using Reyn.Application.Sync;
 using Reyn.Desktop.ViewModels.Shell;
 
 namespace Reyn.Desktop.Views.Shell;
 
+[ExcludeFromCodeCoverage]
 public partial class MainShell : Window
 {
     private readonly ISyncStatusPublisher _statusPublisher;

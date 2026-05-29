@@ -34,7 +34,9 @@ function makeProvisioner(
  * Wrap a synchronous Response-producing handler as a FetchLike, since our
  * test fetchers don't actually do any async work — they're routing logic.
  */
-function fakeFetcher(handler: (input: RequestInfo | URL, init?: RequestInit) => Response): FetchLike {
+function fakeFetcher(
+  handler: (input: RequestInfo | URL, init?: RequestInit) => Response,
+): FetchLike {
   return (input, init) => Promise.resolve(handler(input, init));
 }
 

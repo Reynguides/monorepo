@@ -6,11 +6,7 @@ import { computeContentHash } from "../../lib/content-hash.ts";
 import { findDatabaseIdForUser } from "../../repo/user-databases.ts";
 import { createUserDatabaseClient } from "../../user-data/factory.ts";
 import { UserDatabaseClientError, type IUserDatabaseClient } from "../../user-data/types.ts";
-import type {
-  ClientEventInput,
-  PushResponse,
-  ServerEventInsert,
-} from "../../sync/types.ts";
+import type { ClientEventInput, PushResponse, ServerEventInsert } from "../../sync/types.ts";
 
 /**
  * POST /v1/sync/push
@@ -69,7 +65,10 @@ export const pushHandler: Handler<{ Bindings: Env; Variables: AuthVariables }> =
   return c.json(response, 200);
 };
 
-type IdempotencyParse = { kind: "absent"; key: null } | { kind: "present"; key: string } | { kind: "invalid"; key: null };
+type IdempotencyParse =
+  | { kind: "absent"; key: null }
+  | { kind: "present"; key: string }
+  | { kind: "invalid"; key: null };
 
 function parseIdempotencyKey(
   c: Context<{ Bindings: Env; Variables: AuthVariables }>,
@@ -107,12 +106,7 @@ async function buildInserts(
 ): Promise<ServerEventInsert[]> {
   const out: ServerEventInsert[] = [];
   for (const ev of events) {
-    const contentHash = await computeContentHash(
-      userId,
-      ev.type,
-      ev.occurredAt,
-      ev.payloadJson,
-    );
+    const contentHash = await computeContentHash(userId, ev.type, ev.occurredAt, ev.payloadJson);
     out.push({
       event_id: ev.eventId,
       user_id: userId,

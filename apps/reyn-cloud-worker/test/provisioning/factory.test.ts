@@ -34,6 +34,8 @@ describe("createProvisioner", () => {
 
   it("throws when PROVISIONER=dedicated and CF_API_TOKEN is missing", () => {
     const { CF_API_TOKEN: _t, ...rest } = { ...env, CF_API_TOKEN: "t", CF_ACCOUNT_ID: "a" };
-    expect(() => createProvisioner({ ...rest, PROVISIONER: "dedicated" })).toThrow(ProvisioningError);
+    expect(() => createProvisioner({ ...rest, PROVISIONER: "dedicated" })).toThrow(
+      ProvisioningError,
+    );
   });
 });

@@ -4,7 +4,13 @@ import "../helpers/setup.ts";
 import { SharedUserDatabaseClient } from "../../src/user-data/SharedUserDatabaseClient.ts";
 import type { ServerEventInsert } from "../../src/sync/types.ts";
 
-function makeInsert(eventId: string, userId: string, contentHash: string, type = "bg3.t", occurredAt = 0): ServerEventInsert {
+function makeInsert(
+  eventId: string,
+  userId: string,
+  contentHash: string,
+  type = "bg3.t",
+  occurredAt = 0,
+): ServerEventInsert {
   return {
     event_id: eventId,
     user_id: userId,

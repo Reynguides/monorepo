@@ -23,11 +23,7 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
 
-    "types": [
-      "@cloudflare/workers-types/2023-07-01",
-      "@cloudflare/vitest-pool-workers",
-      "node"
-    ]
+    "types": ["@cloudflare/workers-types/2023-07-01", "@cloudflare/vitest-pool-workers", "node"]
   },
   "include": ["src/**/*", "test/**/*", "env.d.ts", "vitest.config.ts", "eslint.config.js"],
   "exclude": ["node_modules", "dist", ".wrangler", "coverage"]

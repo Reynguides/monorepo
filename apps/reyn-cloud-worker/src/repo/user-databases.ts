@@ -41,4 +41,3 @@ export async function findDatabaseIdForUser(
     .first<{ database_id: string }>();
   return row?.database_id ?? null;
 }
-

@@ -12,7 +12,10 @@ export const ClientEvent = z.object({
   eventId: UuidString,
   type: z.string().min(1).max(128),
   occurredAt: z.number().int().nonnegative(),
-  payloadJson: z.string().min(2).max(64 * 1024),
+  payloadJson: z
+    .string()
+    .min(2)
+    .max(64 * 1024),
 });
 
 export type ClientEvent = z.infer<typeof ClientEvent>;
@@ -43,4 +46,8 @@ export const PullQuery = z.object({
 export type PullQuery = z.infer<typeof PullQuery>;
 
 /** Optional `Idempotency-Key` header — ASCII printable, ≤ 128 chars. */
-export const IdempotencyKey = z.string().min(1).max(128).regex(/^[A-Za-z0-9._:\-]+$/);
+export const IdempotencyKey = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Za-z0-9._:\-]+$/);

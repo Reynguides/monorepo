@@ -1,4 +1,5 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
@@ -12,6 +13,7 @@ namespace Reyn.Desktop;
 /// the outbox processor's background thread, so updates are marshaled onto
 /// the UI thread via the application Dispatcher.
 /// </summary>
+[ExcludeFromCodeCoverage] // WPF Dispatcher-bound INPC adapter; exercised end-to-end by FlaUI tests in a separate process.
 public sealed class SyncStatusViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly ISyncStatusPublisher _publisher;
@@ -35,7 +37,7 @@ public sealed class SyncStatusViewModel : INotifyPropertyChanged, IDisposable
     public string LastSuccessfulSyncDisplay =>
         _snapshot.LastSuccessfulSyncAt is { } t
             ? t.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
-            : "—";
+            : "â€”";
 
     public string? LastError => _snapshot.LastError;
 

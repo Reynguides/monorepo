@@ -8,13 +8,7 @@ const accountsMigrationsPath = path.join(
   "migrations",
   "accounts-d1",
 );
-const userDataMigrationsPath = path.join(
-  import.meta.dirname,
-  "..",
-  "..",
-  "migrations",
-  "user-d1",
-);
+const userDataMigrationsPath = path.join(import.meta.dirname, "..", "..", "migrations", "user-d1");
 const accountsMigrations = await readD1Migrations(accountsMigrationsPath);
 const userDataMigrations = await readD1Migrations(userDataMigrationsPath);
 
@@ -28,8 +22,7 @@ export default defineWorkersConfig({
           // ("Expected object, received string") when both layers declare
           // the same binding, so keep them only in wrangler.toml.
           bindings: {
-            SESSION_PEPPER:
-              "00000000000000000000000000000000000000000000000000000000000000ff",
+            SESSION_PEPPER: "00000000000000000000000000000000000000000000000000000000000000ff",
             PROVISIONER: "shared",
             SHARED_USER_DB_ID: "miniflare-shared-test-id",
             ACCOUNTS_MIGRATIONS: accountsMigrations,

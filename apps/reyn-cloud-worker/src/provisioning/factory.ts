@@ -23,9 +23,7 @@ export function createProvisioner(env: Env): IUserDatabaseProvisioner {
     case "dedicated": {
       const { CF_API_TOKEN, CF_ACCOUNT_ID } = env;
       if (!CF_API_TOKEN || !CF_ACCOUNT_ID) {
-        throw new ProvisioningError(
-          "CF_API_TOKEN and CF_ACCOUNT_ID must be set in dedicated mode",
-        );
+        throw new ProvisioningError("CF_API_TOKEN and CF_ACCOUNT_ID must be set in dedicated mode");
       }
       return new DedicatedProvisioner({ apiToken: CF_API_TOKEN, accountId: CF_ACCOUNT_ID });
     }

@@ -15,7 +15,10 @@ function makeEvent(seed: string, overrides: Record<string, unknown> = {}) {
 
 describe("POST /v1/sync/push", () => {
   it("requires bearer auth", async () => {
-    const res = await call("/v1/sync/push", { method: "POST", jsonBody: { events: [makeEvent("a")] } });
+    const res = await call("/v1/sync/push", {
+      method: "POST",
+      jsonBody: { events: [makeEvent("a")] },
+    });
     expect(res.status).toBe(401);
   });
 

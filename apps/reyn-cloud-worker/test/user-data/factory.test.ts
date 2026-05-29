@@ -6,6 +6,7 @@ import { UserDatabaseClientError } from "../../src/user-data/types.ts";
 import { MockUserDatabaseClient } from "../../src/user-data/MockUserDatabaseClient.ts";
 import { SharedUserDatabaseClient } from "../../src/user-data/SharedUserDatabaseClient.ts";
 import { RestUserDatabaseClient } from "../../src/user-data/RestUserDatabaseClient.ts";
+import type { Env } from "../../src/types/env.ts";
 
 describe("createUserDatabaseClient", () => {
   it("returns MockUserDatabaseClient under PROVISIONER=mock", () => {
@@ -18,8 +19,11 @@ describe("createUserDatabaseClient", () => {
   });
 
   it("throws when PROVISIONER=shared but USER_DATA_DB binding is missing", () => {
+    // The factory accepts the production `Env` interface (with optional
+    // USER_DATA_DB). Test env (`ProvidedEnv`) types it as required; we
+    // omit it via destructure so the factory sees `undefined`.
     const { USER_DATA_DB: _ignored, ...rest } = env;
-    const e = { ...rest, USER_DATA_DB: undefined } as typeof env;
+    const e: Env = { ...rest };
     expect(() => createUserDatabaseClient(e, "db-id")).toThrowError(UserDatabaseClientError);
   });
 

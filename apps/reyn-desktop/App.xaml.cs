@@ -26,6 +26,11 @@ using Reyn.Infrastructure.Sync;
 
 namespace Reyn.Desktop;
 
+// App.xaml.cs is pure DI + window-lifecycle wiring. Its behaviour is
+// integration-tested by the FlaUI suite which launches the real exe;
+// coverlet's in-process collection doesn't observe the separate
+// process. Excluded explicitly per ADR-0004's WPF carve-out.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public partial class App
 {
     public static IServiceProvider Services { get; private set; } = null!;
@@ -272,17 +277,23 @@ public partial class App
         services.AddHostedService<Bg3ProcessDetectorService>();
 
         services.Configure<MockEventGeneratorOptions>(_ => { });
+        services.Configure<Bg3FileEventSourceOptions>(_ => { });
 
 #if DEBUG
         // In demo mode, run the mock generator instead of the real socket
-        // source so the overlay ticker has events to display without a
-        // BG3SE Lua mod connecting.
+        // / file sources so the overlay ticker has events to display
+        // without a BG3SE Lua mod connecting.
         if (Environment.GetCommandLineArgs().Contains("--demo-mode", StringComparer.OrdinalIgnoreCase))
         {
             services.AddSingleton<IGameEventSource, MockBg3EventGenerator>();
             return;
         }
 #endif
+        // Production: file source (Phase 10 mod output) + socket source
+        // (external producers, future native shim). The overlay window
+        // consumes IEnumerable<IGameEventSource> and starts a reader per
+        // source; both feed the same ticker + outbox pipeline.
+        services.AddSingleton<IGameEventSource, Bg3FileEventSource>();
         services.AddSingleton<IGameEventSource, Bg3SocketEventSource>();
     }
 }

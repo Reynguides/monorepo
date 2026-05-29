@@ -1,4 +1,5 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using System.Windows.Controls;
 using Reyn.Desktop.ViewModels.Shell;
@@ -8,8 +9,9 @@ namespace Reyn.Desktop.Views.Shell.Controls;
 /// <summary>
 /// Single tri-state surface every shell page composes. Binds to the page
 /// VM's <c>State</c> property and shows exactly one of Loading / Empty /
-/// Error / (nothing — page renders its own ready surface).
+/// Error / (nothing â€” page renders its own ready surface).
 /// </summary>
+[ExcludeFromCodeCoverage]
 public partial class PageStateControl : UserControl
 {
     public PageStateControl()

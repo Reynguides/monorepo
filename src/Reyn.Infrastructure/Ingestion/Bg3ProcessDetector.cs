@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Reyn.Application.Ingestion;
 
 namespace Reyn.Infrastructure.Ingestion;
@@ -8,7 +9,13 @@ namespace Reyn.Infrastructure.Ingestion;
 /// list for <c>bg3.exe</c> or <c>bg3_dx11.exe</c>. The hosted service
 /// (<see cref="Bg3ProcessDetectorService"/>) calls this on a 2-second
 /// cadence; the check is cheap (the OS keeps a process snapshot).
+///
+/// Excluded from coverage — the implementation reaches into the real OS
+/// process table, which a unit test can't isolate cleanly. The behaviour
+/// above this layer (<see cref="Bg3ProcessDetectorService"/>) is
+/// exhaustively tested with a stubbed <see cref="IGameDetector"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class Bg3ProcessDetector : IGameDetector
 {
     private static readonly string[] ProcessNames = { "bg3", "bg3_dx11" };

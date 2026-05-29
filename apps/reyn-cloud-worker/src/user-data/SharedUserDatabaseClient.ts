@@ -51,7 +51,9 @@ export class SharedUserDatabaseClient implements IUserDatabaseClient {
 
   public async findIdempotentResponse(userId: string, key: string): Promise<string | null> {
     const row = await this.db
-      .prepare("SELECT response_json FROM sync_idempotency WHERE user_id = ? AND idempotency_key = ?")
+      .prepare(
+        "SELECT response_json FROM sync_idempotency WHERE user_id = ? AND idempotency_key = ?",
+      )
       .bind(userId, key)
       .first<{ response_json: string }>();
     return row?.response_json ?? null;
