@@ -1,8 +1,22 @@
 import path from "node:path";
 import { defineWorkersConfig, readD1Migrations } from "@cloudflare/vitest-pool-workers/config";
 
-const migrationsPath = path.join(import.meta.dirname, "..", "..", "migrations", "accounts-d1");
-const migrations = await readD1Migrations(migrationsPath);
+const accountsMigrationsPath = path.join(
+  import.meta.dirname,
+  "..",
+  "..",
+  "migrations",
+  "accounts-d1",
+);
+const userDataMigrationsPath = path.join(
+  import.meta.dirname,
+  "..",
+  "..",
+  "migrations",
+  "user-d1",
+);
+const accountsMigrations = await readD1Migrations(accountsMigrationsPath);
+const userDataMigrations = await readD1Migrations(userDataMigrationsPath);
 
 export default defineWorkersConfig({
   test: {
@@ -10,12 +24,16 @@ export default defineWorkersConfig({
       workers: {
         wrangler: { configPath: "./wrangler.toml" },
         miniflare: {
-          d1Databases: ["ACCOUNTS_DB"],
+          // D1 bindings are read from wrangler.toml. Pool v0.8 errors out
+          // ("Expected object, received string") when both layers declare
+          // the same binding, so keep them only in wrangler.toml.
           bindings: {
             SESSION_PEPPER:
               "00000000000000000000000000000000000000000000000000000000000000ff",
             PROVISIONER: "shared",
-            ACCOUNTS_MIGRATIONS: migrations,
+            SHARED_USER_DB_ID: "miniflare-shared-test-id",
+            ACCOUNTS_MIGRATIONS: accountsMigrations,
+            USER_DATA_MIGRATIONS: userDataMigrations,
           },
         },
       },

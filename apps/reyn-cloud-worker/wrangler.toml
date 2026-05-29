@@ -13,12 +13,22 @@ database_name = "reyn_accounts"
 database_id = "66c23739-91b7-483b-85fc-dd02ff0bf9d9"
 migrations_dir = "../../migrations/accounts-d1"
 
+# Shared user-data D1 — used when PROVISIONER=shared (local dev / no-credentials CI).
+# Unused under PROVISIONER=dedicated which talks to per-user D1s via REST API.
+[[d1_databases]]
+binding = "USER_DATA_DB"
+database_name = "reyn_user_data_shared"
+# Created 2026-05-29 via Cloudflare MCP (account 2037a707…1, region EEUR).
+database_id = "57512cd4-c5f3-46ff-9b9a-20aedf03a5d7"
+migrations_dir = "../../migrations/user-d1"
+
 [vars]
 # Default provisioner mode per ADR-0002. Override per-environment with
-# `wrangler deploy --env <name>` once Phase 4 needs `dedicated`.
+# `wrangler deploy --env <name>` to switch to `dedicated`.
 PROVISIONER = "shared"
+SHARED_USER_DB_ID = "57512cd4-c5f3-46ff-9b9a-20aedf03a5d7"
 
 # Required secrets (set with `wrangler secret put <NAME>`):
 # - SESSION_PEPPER  : 32+ random bytes hex. Hashed into every stored token.
-# - CF_API_TOKEN    : Account-scoped token with `Account → Cloudflare D1 → Edit`. Phase 4.
-# - CF_ACCOUNT_ID   : Cloudflare account ID for per-user D1 REST API. Phase 4.
+# - CF_API_TOKEN    : Account-scoped token with `Account → Cloudflare D1 → Edit`. Required for dedicated mode.
+# - CF_ACCOUNT_ID   : Cloudflare account ID for per-user D1 REST API. Required for dedicated mode.

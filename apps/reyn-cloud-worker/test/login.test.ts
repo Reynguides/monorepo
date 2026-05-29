@@ -39,4 +39,13 @@ describe("POST /v1/auth/login", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("returns 400 on malformed JSON body", async () => {
+    const res = await call("/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{not-json",
+    });
+    expect(res.status).toBe(400);
+  });
 });

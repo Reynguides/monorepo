@@ -19,6 +19,9 @@ export const requireAuth: MiddlewareHandler<{
     return fail(c, 401, "unauthorized");
   }
   const token = header.slice("Bearer ".length).trim();
+  /* istanbul ignore if -- HTTP normalisation trims trailing whitespace on the
+     header before we see it, so "Bearer " collapses to "Bearer" and trips the
+     !startsWith branch above before reaching here. Defensive only. */
   if (token.length === 0) {
     return fail(c, 401, "unauthorized");
   }

@@ -9,8 +9,7 @@ export const meHandler: Handler<{ Bindings: Env; Variables: AuthVariables }> = a
   const user = await findUserById(c.env.ACCOUNTS_DB, userId);
   /* istanbul ignore if -- defensive: a valid session pointing at a deleted
      user requires FK enforcement to have been bypassed, which production
-     paths cannot do. Verified by the FK-off test in me.test.ts when it can
-     successfully orphan a session. */
+     paths cannot do. */
   if (!user) {
     return fail(c, 401, "unauthorized");
   }
