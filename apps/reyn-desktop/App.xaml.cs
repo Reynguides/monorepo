@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Reyn.Application.Abstractions;
+using Reyn.Infrastructure.Auth;
 using Reyn.Infrastructure.Http;
 using Reyn.Infrastructure.Persistence;
 using System.Windows;
@@ -14,17 +16,20 @@ public partial class App
     {
         var collection = new ServiceCollection();
 
-        collection.AddDbContext<AppDbContext>(o =>
-            o.UseSqlite("Data Source=proxy.db"));
+        collection.AddDbContext<ReynDbContext>(o =>
+            o.UseSqlite("Data Source=reyn-desktop.db"));
+
+        collection.AddSingleton<ICurrentUserAccessor, StaticCurrentUserAccessor>();
 
         collection.AddHttpClient<ProxyService>();
         collection.AddHttpClient<SyncService>();
 
         Services = collection.BuildServiceProvider();
 
-        // Phase 2 replaces EnsureCreated() with Migrate().
+        // Phase 2: apply EF migrations on startup (replaces EnsureCreated()).
         using var scope = Services.CreateScope();
-        scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreated();
+        var db = scope.ServiceProvider.GetRequiredService<ReynDbContext>();
+        db.Database.Migrate();
 
         base.OnStartup(e);
     }

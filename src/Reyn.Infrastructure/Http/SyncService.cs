@@ -1,14 +1,15 @@
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
+using Reyn.Application.Abstractions;
 using Reyn.Infrastructure.Persistence;
 
 namespace Reyn.Infrastructure.Http;
 
-public class SyncService(HttpClient http, AppDbContext db)
+public class SyncService(HttpClient http, ReynDbContext db, ICurrentUserAccessor currentUser)
 {
     private const string WorkerUrl = "https://syncworker.oleksandr-delas.workers.dev";
-    private const string UserId = "user1"; // Phase 5 replaces with ICurrentUserAccessor.
 
     public async Task PushAsync()
     {
@@ -21,14 +22,15 @@ public class SyncService(HttpClient http, AppDbContext db)
             return;
         }
 
+        var userId = currentUser.UserId;
         var payload = unsync.Select(l => new
         {
             id = l.Id,
-            userId = UserId,
+            userId,
             method = l.Method,
             path = l.Path,
             statusCode = l.StatusCode,
-            updatedAt = l.UpdatedAt.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+            updatedAt = l.UpdatedAt.ToString("o", CultureInfo.InvariantCulture),
         });
 
         var response = await http.PostAsJsonAsync($"{WorkerUrl}/sync/push", payload).ConfigureAwait(false);

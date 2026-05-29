@@ -3,7 +3,7 @@ using Reyn.Infrastructure.Persistence;
 
 namespace Reyn.Infrastructure.Http;
 
-public class ProxyService(HttpClient http, AppDbContext db)
+public class ProxyService(HttpClient http, ReynDbContext db)
 {
     private const string Upstream = "https://jsonplaceholder.typicode.com";
 
