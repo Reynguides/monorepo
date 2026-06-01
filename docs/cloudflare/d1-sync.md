@@ -92,6 +92,21 @@ When you add a new migration:
   `reyn_accounts` + `reyn_user_data_shared` on every deploy; per-user
   D1s pick them up at provision time only.
 
+## Push / pull response contract
+
+`POST /v1/sync/push` returns `{ accepted, duplicates }` — the number of
+newly-inserted rows and the number silently dedup'd by the
+`UNIQUE(user_id, content_hash)` index. The original plan sketched a third
+`errors[]` field, but the implemented contract has no per-event error
+channel: the whole batch is Zod-validated up front (any malformed event →
+`400`), and inserts use `INSERT OR IGNORE`, so every event in an accepted
+batch either inserts or is a duplicate. The desktop client
+(`HttpEventSyncClient`) reads exactly these two counts.
+
+`GET /v1/sync/pull?since=<rowid>&limit=<n>` returns `{ items, nextCursor }`,
+where `nextCursor` is the last row's cursor, or `null` when the page is the
+tail (fresh-install rehydration stops when `nextCursor` is `null`).
+
 ## Content hash canonicalisation
 
 `computeContentHash(user, type, occurredAt, payloadJson)` produces

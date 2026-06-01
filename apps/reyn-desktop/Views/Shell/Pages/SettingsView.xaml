@@ -29,7 +29,7 @@
                 Style="{StaticResource StatCardStyle}"
                 VerticalAlignment="Top">
             <StackPanel>
-                <TextBlock Text="Phase 11 will populate this page with theme, overlay, and sync preferences."
+                <TextBlock Text="Theme, overlay, telemetry, and account preferences are planned here — see the Settings item in docs/roadmap.md."
                            Style="{StaticResource BodyText}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap"/>

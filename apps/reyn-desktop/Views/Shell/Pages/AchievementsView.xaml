@@ -94,11 +94,45 @@
                                                        Foreground="{DynamicResource TextTertiaryBrush}"/>
                                         </StackPanel>
                                         <TextBlock Text="UNLOCKED"
-                                                   Style="{StaticResource CaptionText}"
                                                    Foreground="{DynamicResource SuccessBrush}"
                                                    HorizontalAlignment="Right"
                                                    Margin="0,4,0,0"
-                                                   Visibility="{Binding Unlocked, Converter={StaticResource BoolToVisibility}}"/>
+                                                   RenderTransformOrigin="1,0.5"
+                                                   Visibility="{Binding Unlocked, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock.RenderTransform>
+                                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                            </TextBlock.RenderTransform>
+                                            <TextBlock.Style>
+                                                <!-- Unlock animation (plan Phase 8): the badge scales + fades
+                                                     in when an achievement is unlocked / first rendered. -->
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                                            <DataTrigger.EnterActions>
+                                                                <BeginStoryboard>
+                                                                    <Storyboard>
+                                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                         From="0" To="1" Duration="0:0:0.25"/>
+                                                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                                         From="0.6" To="1" Duration="0:0:0.28">
+                                                                            <DoubleAnimation.EasingFunction>
+                                                                                <BackEase EasingMode="EaseOut" Amplitude="0.4"/>
+                                                                            </DoubleAnimation.EasingFunction>
+                                                                        </DoubleAnimation>
+                                                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                                         From="0.6" To="1" Duration="0:0:0.28">
+                                                                            <DoubleAnimation.EasingFunction>
+                                                                                <BackEase EasingMode="EaseOut" Amplitude="0.4"/>
+                                                                            </DoubleAnimation.EasingFunction>
+                                                                        </DoubleAnimation>
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </DataTrigger.EnterActions>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </StackPanel>
                                 </Grid>
                             </Border>

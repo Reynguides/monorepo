@@ -232,7 +232,7 @@ public partial class App
              .AddInterceptors(sp.GetRequiredService<OutboxEnqueuingInterceptor>()),
             lifetime: ServiceLifetime.Singleton);
 
-        services.AddSingleton<ICurrentUserAccessor, StaticCurrentUserAccessor>();
+        services.AddSingleton<ICurrentUserAccessor, TokenStoreCurrentUserAccessor>();
 
         services.AddSingleton<EventSyncStatusPublisher>();
         services.AddSingleton<ISyncStatusPublisher>(sp => sp.GetRequiredService<EventSyncStatusPublisher>());
@@ -241,6 +241,7 @@ public partial class App
         services.AddSingleton<DpapiTokenStore>();
         services.AddSingleton<IAuthTokenSource>(sp => sp.GetRequiredService<DpapiTokenStore>());
         services.AddSingleton<IAuthTokenStore>(sp => sp.GetRequiredService<DpapiTokenStore>());
+        services.AddSingleton<ICurrentUserIdSource>(sp => sp.GetRequiredService<DpapiTokenStore>());
 
         services.Configure<SyncOptions>(_ => { });
         services.AddHttpClient<IEventSyncClient, HttpEventSyncClient>();

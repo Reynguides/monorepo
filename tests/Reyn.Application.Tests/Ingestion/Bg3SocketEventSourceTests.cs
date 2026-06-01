@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using FluentAssertions;
@@ -11,7 +12,24 @@ namespace Reyn.Application.Tests.Ingestion;
 
 public sealed class Bg3SocketEventSourceTests
 {
-    private static int NextPort() => Random.Shared.Next(40000, 50000);
+    // Ask the OS for a free loopback port (port 0 -> ephemeral) rather than
+    // guessing in [40000,50000). On CI Windows runners that range can overlap
+    // a WinNAT/Hyper-V excluded port range, so a guessed port fails to bind
+    // with WSAEACCES ("forbidden by access permissions"). An OS-assigned port
+    // is guaranteed to be outside the excluded ranges.
+    private static int NextPort()
+    {
+        var probe = new TcpListener(IPAddress.Loopback, 0);
+        probe.Start();
+        try
+        {
+            return ((IPEndPoint)probe.LocalEndpoint).Port;
+        }
+        finally
+        {
+            probe.Stop();
+        }
+    }
 
     private static Bg3SocketEventSource MakeSource(int port) =>
         new(NullLogger<Bg3SocketEventSource>.Instance) { Port = port };

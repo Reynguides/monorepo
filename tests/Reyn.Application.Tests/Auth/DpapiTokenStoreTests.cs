@@ -102,4 +102,14 @@ public sealed class DpapiTokenStoreTests : IDisposable
     {
         DpapiTokenStore.DefaultPath().Should().Contain("Reyn").And.EndWith("auth.bin");
     }
+
+    [Fact]
+    public async Task CurrentUserId_is_null_before_any_session_and_reflects_the_saved_user()
+    {
+        using var store = new DpapiTokenStore(_path);
+        store.CurrentUserId.Should().BeNull();
+
+        await store.SaveAsync(new StoredAuth("alice", "tok", DateTime.UtcNow.AddHours(1)), CancellationToken.None);
+        store.CurrentUserId.Should().Be("alice");
+    }
 }

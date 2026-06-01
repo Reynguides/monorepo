@@ -38,7 +38,11 @@ public sealed class SplashTests
         try
         {
             using var automation = new UIA3Automation();
-            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(8);
+            // Cold-start on a loaded CI runner (JIT + EF Migrate + host
+            // StartAsync before splash.Show()) can exceed 8s; AuthFlowTests
+            // already uses a 10s budget for the post-splash window, so give
+            // the (earlier, transient) splash a generous margin.
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
             while (DateTime.UtcNow < deadline)
             {
                 foreach (var w in app.GetAllTopLevelWindows(automation))
@@ -61,7 +65,7 @@ public sealed class SplashTests
                 }
                 Thread.Sleep(30);
             }
-            throw new InvalidOperationException("Splash window never appeared within 8s");
+            throw new InvalidOperationException("Splash window never appeared within 20s");
         }
         finally
         {

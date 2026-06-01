@@ -60,14 +60,14 @@ checklist.
 ## Test
 
 ```powershell
-# .NET (154 tests)
+# .NET (193 tests)
 dotnet test Reyn.sln
 
 # Worker (110 tests)
 cd apps/reyn-cloud-worker
 pnpm test
 
-# Lua mod (29 tests)
+# Lua mod (30 tests)
 lua apps/reyn-bg3-mod/tests/lua/run.lua
 ```
 

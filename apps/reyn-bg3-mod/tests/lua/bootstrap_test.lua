@@ -99,6 +99,37 @@ suite:case("every Subscription.handler resolves to a real Handlers.* function", 
     end
 end)
 
+suite:case("each Subscription handler emits its expected catalog type", function()
+    -- Guards against handler mis-wiring (e.g. ItemPickedUp routed to the
+    -- enemy_killed handler). Every Osiris subscription must emit the catalog
+    -- type that matches its semantic event.
+    local expected = {
+        CharacterDied = Catalog.CharacterDied,
+        CharacterResurrected = Catalog.CharacterRevived,
+        LeveledUp = Catalog.CharacterLevelUp,
+        CombatStarted = Catalog.CombatStarted,
+        CombatEnded = Catalog.CombatEnded,
+        RegionStarted = Catalog.RegionEntered,
+        RegionEnded = Catalog.RegionExited,
+        QuestStarted = Catalog.QuestStarted,
+        QuestUpdated = Catalog.QuestUpdated,
+        QuestComplete = Catalog.QuestCompleted,
+        LongRestRequested = Catalog.RestLong,
+        ItemPickedUp = Catalog.ItemPickedUp,
+        RealtimeLoaded = Catalog.SessionStarted,
+        GameOver = Catalog.SessionEnded,
+    }
+    for _, sub in ipairs(Bootstrap.Subscriptions) do
+        local want = expected[sub.osirisEvent]
+        h.assert_not_nil(want, "no expected type mapped for " .. tostring(sub.osirisEvent))
+        local handler = Bootstrap.HandlerFor(sub.handler)
+        h.assert_not_nil(handler, "missing handler: " .. tostring(sub.handler))
+        local event = handler(1700000000000)
+        h.assert_equal(event.type, want,
+            "subscription " .. tostring(sub.osirisEvent) .. " emitted wrong catalog type")
+    end
+end)
+
 suite:case("Catalog.All has 28 unique event types", function()
     h.assert_equal(#Catalog.All, 28)
     local seen = {}

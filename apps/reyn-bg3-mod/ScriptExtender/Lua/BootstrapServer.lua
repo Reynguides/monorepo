@@ -134,6 +134,18 @@ function Handlers.quest_started(now, questId)
     }
 end
 
+function Handlers.quest_updated(now, questId, state)
+    return {
+        type = Catalog.QuestUpdated,
+        occurredAt = now,
+        payload = {
+            source = source(),
+            quest = tostring(questId or ""),
+            state = state and tostring(state) or nil,
+        },
+    }
+end
+
 function Handlers.quest_completed(now, questId)
     return {
         type = Catalog.QuestCompleted,
@@ -147,6 +159,18 @@ function Handlers.rest_long(now)
         type = Catalog.RestLong,
         occurredAt = now,
         payload = { source = source(), camp = true },
+    }
+end
+
+function Handlers.item_picked_up(now, itemGuid, characterGuid)
+    return {
+        type = Catalog.ItemPickedUp,
+        occurredAt = now,
+        payload = {
+            source = source(),
+            item = tostring(itemGuid or ""),
+            byCharacterId = characterGuid and tostring(characterGuid) or nil,
+        },
     }
 end
 
@@ -181,10 +205,10 @@ M.Subscriptions = {
     { osirisEvent = "RegionStarted",        arity = 1, when = "after", handler = "region_entered" },
     { osirisEvent = "RegionEnded",          arity = 1, when = "after", handler = "region_exited" },
     { osirisEvent = "QuestStarted",         arity = 1, when = "after", handler = "quest_started" },
-    { osirisEvent = "QuestUpdated",         arity = 2, when = "after", handler = "quest_started" },
+    { osirisEvent = "QuestUpdated",         arity = 2, when = "after", handler = "quest_updated" },
     { osirisEvent = "QuestComplete",        arity = 1, when = "after", handler = "quest_completed" },
     { osirisEvent = "LongRestRequested",    arity = 0, when = "after", handler = "rest_long" },
-    { osirisEvent = "ItemPickedUp",         arity = 2, when = "after", handler = "enemy_killed" },
+    { osirisEvent = "ItemPickedUp",         arity = 2, when = "after", handler = "item_picked_up" },
     { osirisEvent = "RealtimeLoaded",       arity = 0, when = "after", handler = "session_started" },
     { osirisEvent = "GameOver",             arity = 0, when = "after", handler = "session_ended" },
 }

@@ -1,9 +1,10 @@
 namespace Reyn.Application.Abstractions;
 
 /// <summary>
-/// Resolves the currently-authenticated user for downstream layers.
-/// Phase 2 ships a static accessor returning <c>"user1"</c>; Phase 6 replaces
-/// it with a DPAPI-backed reader of the persisted session token.
+/// Resolves the currently-authenticated user for downstream layers (event
+/// stamping, per-user query scoping). The production implementation is
+/// token-backed via <see cref="ICurrentUserIdSource"/> and falls back to a
+/// stable offline id when no session is established.
 /// </summary>
 public interface ICurrentUserAccessor
 {

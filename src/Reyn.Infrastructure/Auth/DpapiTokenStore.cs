@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using Reyn.Application.Abstractions;
 using Reyn.Application.Auth;
 using Reyn.Application.Sync;
 
@@ -21,7 +22,7 @@ namespace Reyn.Infrastructure.Auth;
 /// hit per cycle. A <see cref="SemaphoreSlim"/> guards concurrent
 /// load/save races between the splash session check and the auth flow.
 /// </summary>
-public sealed class DpapiTokenStore : IAuthTokenStore, IAuthTokenSource, IDisposable
+public sealed class DpapiTokenStore : IAuthTokenStore, IAuthTokenSource, ICurrentUserIdSource, IDisposable
 {
     private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("Reyn.DpapiTokenStore.v1");
 
@@ -39,6 +40,15 @@ public sealed class DpapiTokenStore : IAuthTokenStore, IAuthTokenSource, IDispos
     {
         _path = path;
     }
+
+    /// <summary>
+    /// Best-effort current user id from the in-memory session cache, or
+    /// <c>null</c> if no session has been loaded/saved yet. Synchronous so
+    /// <see cref="TokenStoreCurrentUserAccessor"/> can stamp entities without
+    /// an async hop; reflects the most recent
+    /// <see cref="SaveAsync"/>/<see cref="LoadAsync"/>.
+    /// </summary>
+    public string? CurrentUserId => Volatile.Read(ref _cached)?.UserId;
 
     public async Task SaveAsync(StoredAuth auth, CancellationToken ct)
     {

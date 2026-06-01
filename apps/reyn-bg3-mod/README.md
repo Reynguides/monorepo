@@ -2,8 +2,8 @@
 
 Forwards Baldur's Gate 3 Osiris events to the Reyn desktop app as
 newline-delimited JSON. Production-shape scaffold: 14 high-signal events
-wired, JSON serialization tested, transport pluggable. Phase 11 will
-wire the desktop's file-watcher source against the file this mod writes.
+wired, JSON serialization tested, transport pluggable. The desktop's
+`Bg3FileEventSource` watches the file this mod writes.
 
 ## Status
 
@@ -53,10 +53,10 @@ Each line is one catalog-shaped event:
 {"type":"bg3.combat.enemy_killed","occurredAt":1700000000000,"payload":{"source":"bg3se","enemy":"Goblin Scout"}}
 ```
 
-The Reyn desktop already speaks newline-delimited JSON via its Phase 9
-`Bg3SocketEventSource` (loopback:35353); Phase 11 adds a
-`Bg3FileEventSource` watching the path above so this mod can deliver
-events without a TCP layer.
+The Reyn desktop speaks newline-delimited JSON via its Phase 9
+`Bg3SocketEventSource` (loopback:35353), and its `Bg3FileEventSource`
+watches the path above so this mod can deliver events without a TCP
+layer.
 
 ### Why file-based instead of TCP
 
@@ -83,15 +83,12 @@ query calls.
 | `RegionStarted`          | `bg3.region.entered`         |
 | `RegionEnded`            | `bg3.region.exited`          |
 | `QuestStarted`           | `bg3.quest.started`          |
-| `QuestUpdated`           | `bg3.quest.started`          |
+| `QuestUpdated`           | `bg3.quest.updated`          |
 | `QuestComplete`          | `bg3.quest.completed`        |
 | `LongRestRequested`      | `bg3.rest.long`              |
-| `ItemPickedUp`           | `bg3.combat.enemy_killed` *  |
+| `ItemPickedUp`           | `bg3.inventory.item_picked_up` |
 | `RealtimeLoaded`         | `bg3.session.started`        |
 | `GameOver`               | `bg3.session.ended`          |
-
-*`ItemPickedUp` is wired to a placeholder handler pending the Phase 11
-inventory pipeline.
 
 ## Smoke checklist (manual, requires BG3 + BG3SE)
 
@@ -122,7 +119,7 @@ lua tests/lua/run.lua
 Expected output:
 
 ```text
-29 passed / 29 total — 0 failures
+30 passed / 30 total — 0 failures
 ```
 
 Compatible with Lua 5.1 (BG3SE's runtime) and 5.4 (dev / CI). The Phase

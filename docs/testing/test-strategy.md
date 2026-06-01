@@ -4,14 +4,14 @@ Reyn ships **four** test layers across three runtimes. This page is the
 map: what each layer covers, where the tests live, and what they
 exclude. The 95% line / 90% branch floor (ADR-0004) is enforced in CI.
 
-## .NET (`Reyn.sln`, 154 tests)
+## .NET (`Reyn.sln`, 193 tests)
 
 ### `Reyn.Infrastructure.Tests` (4)
 EF migrations smoke + in-memory SQLite shape assertions. Verifies that
 the full schema (8 tables) materialises and the migration history
 records the right rows.
 
-### `Reyn.Application.Tests` (95)
+### `Reyn.Application.Tests` (115)
 The bulk of the suite.
 
 - **`Sync/`** — `BackoffPolicy`, `OutboxProcessor` (start/stop loop +
@@ -31,14 +31,14 @@ The bulk of the suite.
   `Bg3DetectionPublisher` + `Bg3ProcessDetectorService` (stubbed
   detector — no real process probing in tests).
 
-### `Reyn.Desktop.ViewModels.Tests` (42)
+### `Reyn.Desktop.ViewModels.Tests` (50)
 Pure VM tests — `net8.0`, no WPF reference. Covers AuthShell, Login,
 Register, MainShell navigation, OpenSync command, Splash, every page
 VM's Loading → Empty/Ready/Error transition, Events filter logic
 (chip toggle, source change, clear, capacity), Overlay (timer
 formatting, ticker capacity, prefix-stripping, party-ring zero-max).
 
-### `Reyn.Desktop.UiTests` (13)
+### `Reyn.Desktop.UiTests` (24)
 FlaUI + UIA3 end-to-end tests on `net8.0-windows`. Categories:
 - **`Auth`** — splash visibility, AuthShell form fields, switch to
   register.
@@ -68,7 +68,7 @@ Layout:
 Coverage exclusions: `src/index.ts` (just routes wiring) and
 `src/types/**` (declaration-only).
 
-## Lua (`apps/reyn-bg3-mod/`, 29 tests)
+## Lua (`apps/reyn-bg3-mod/`, 30 tests)
 
 Pure-Lua harness (`tests/lua/helpers.lua`, under 100 LoC). The `Ext`
 table is stubbed; tests verify:

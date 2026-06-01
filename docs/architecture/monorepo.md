@@ -50,7 +50,7 @@ Reyn/
 │   └── reyn-bg3-mod/                 # BG3SE Lua mod scaffold
 │       ├── meta.lsx                  # mod metadata + UUID
 │       ├── ScriptExtender/Lua/       # init.lua + BootstrapServer + Catalog + transport + json
-│       └── tests/lua/                # pure-Lua test harness (29 tests)
+│       └── tests/lua/                # pure-Lua test harness (30 tests)
 │
 ├── packages/
 │   └── event-catalog/                # @reyn/event-catalog (TS, Zod) — single source of truth
@@ -65,10 +65,10 @@ Reyn/
 │
 ├── tests/
 │   ├── Reyn.Domain.Tests/            # (TBD; ADR-0009 invariants)
-│   ├── Reyn.Application.Tests/       # query + sync + ingestion + auth (95 tests)
+│   ├── Reyn.Application.Tests/       # query + sync + ingestion + auth (115 tests)
 │   ├── Reyn.Infrastructure.Tests/    # EF migrations smoke (4 tests)
-│   ├── Reyn.Desktop.ViewModels.Tests # VM unit tests (42 tests)
-│   └── Reyn.Desktop.UiTests/         # FlaUI (13 tests, Category-tagged)
+│   ├── Reyn.Desktop.ViewModels.Tests # VM unit tests (50 tests)
+│   └── Reyn.Desktop.UiTests/         # FlaUI (24 tests, Category-tagged)
 │
 ├── migrations/
 │   ├── accounts-d1/0001_init.sql     # users + sessions + user_databases
