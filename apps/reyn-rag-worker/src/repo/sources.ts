@@ -29,6 +29,26 @@ export async function insertSource(
     .run();
 }
 
+/**
+ * Idempotent registration keyed on the source id (the PK). Re-registering the
+ * same id is a no-op — `INSERT OR IGNORE` leaves the existing row (and its
+ * `created_at`) untouched rather than erroring or duplicating. Returns the
+ * effective id so callers always get the registered identity back.
+ */
+export async function upsertSource(
+  db: D1Database,
+  source: NewSource,
+  nowMs: number,
+): Promise<string> {
+  await db
+    .prepare(
+      "INSERT OR IGNORE INTO sources (id, name, base_url, tier, created_at) VALUES (?, ?, ?, ?, ?)",
+    )
+    .bind(source.id, source.name, source.base_url, source.tier, nowMs)
+    .run();
+  return source.id;
+}
+
 export async function getSourceById(db: D1Database, id: string): Promise<SourceRow | null> {
   const row = await db
     .prepare("SELECT id, name, base_url, tier, created_at FROM sources WHERE id = ?")

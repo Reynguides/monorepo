@@ -61,6 +61,49 @@ describe("POST /v1/kb/sources", () => {
     expect(row!.tier).toBe(1);
   });
 
+  it("honours an explicit id and is idempotent on re-POST (no duplicate row)", async () => {
+    const explicitId = "bg3-wiki";
+    const post = async () =>
+      call("/v1/kb/sources", {
+        method: "POST",
+        headers: AUTH,
+        jsonBody: { id: explicitId, name: "BG3 Wiki", baseUrl: "https://bg3.wiki", tier: 1 },
+      });
+
+    // First registration creates the row under the explicit id (201).
+    const first = await post();
+    expect(first.status).toBe(201);
+    const firstJson: SourceResult = await first.json();
+    expect(firstJson.sourceId).toBe(explicitId);
+
+    const createdAt = (
+      await env.KB_DB.prepare("SELECT created_at FROM sources WHERE id = ?")
+        .bind(explicitId)
+        .first<{ created_at: number }>()
+    )?.created_at;
+    expect(createdAt).toBeTypeOf("number");
+
+    // Re-POSTing the same id is a no-op: 200, same id, still exactly one row,
+    // and the original created_at is preserved (INSERT OR IGNORE).
+    const second = await post();
+    expect(second.status).toBe(200);
+    const secondJson: SourceResult = await second.json();
+    expect(secondJson.sourceId).toBe(explicitId);
+
+    const count = await env.KB_DB.prepare("SELECT COUNT(*) AS n FROM sources WHERE id = ?")
+      .bind(explicitId)
+      .first<{ n: number }>();
+    expect(count!.n).toBe(1);
+    const after = await env.KB_DB.prepare("SELECT created_at FROM sources WHERE id = ?")
+      .bind(explicitId)
+      .first<{ created_at: number }>();
+    expect(after!.created_at).toBe(createdAt);
+
+    // A page can now be stored under the explicit source id without 404ing.
+    const page = await storePage(explicitId, "https://bg3.wiki/Astarion", "<h1>Astarion</h1>");
+    expect(page.status).toBe(201);
+  });
+
   it("rejects an invalid body with 400 validation_failed", async () => {
     const res = await call("/v1/kb/sources", {
       method: "POST",

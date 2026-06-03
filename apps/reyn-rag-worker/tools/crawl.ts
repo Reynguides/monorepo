@@ -94,6 +94,28 @@ function makeSink(baseUrl: string, ingestKey: string): (page: CrawlPage) => Prom
   };
 }
 
+/**
+ * Registers the catalog source with the Worker before crawling. Idempotent:
+ * the Worker keys on the explicit `id`, so re-runs are a no-op (200). Without
+ * this, `POST /v1/kb/pages` 404s because no `sources` row exists for the
+ * catalog id the crawler stamps onto each page.
+ */
+async function registerSource(baseUrl: string, ingestKey: string, source: Source): Promise<void> {
+  const res = await fetch(new URL("/v1/kb/sources", baseUrl), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${ingestKey}` },
+    body: JSON.stringify({
+      id: source.id,
+      name: source.name,
+      baseUrl: source.baseUrl,
+      tier: source.tier,
+    }),
+  });
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`Source registration failed for ${source.id}: ${String(res.status)}`);
+  }
+}
+
 function makeCrawlState(baseUrl: string, ingestKey: string, sourceId: string) {
   return {
     async getCursor(): Promise<number> {
@@ -125,6 +147,10 @@ async function main(): Promise<void> {
   }
   const baseUrl = requireEnv("RAG_BASE_URL");
   const ingestKey = requireEnv("KB_INGEST_KEY");
+
+  // Register the source first (idempotent) so page writes don't 404 on a
+  // missing `sources` row. Pages are stamped with `source.id` below.
+  await registerSource(baseUrl, ingestKey, source);
 
   const robots = await loadRobots(source);
   const minIntervalMs = robots.crawlDelayMs > 0 ? robots.crawlDelayMs : DEFAULT_INTERVAL_MS;

@@ -3,6 +3,10 @@ import { z } from "zod";
 /** Validated at the write boundary with `safeParse`; failures → 400 validation_failed. */
 
 export const StoreSourceRequest = z.object({
+  // Optional, caller-supplied id (e.g. a stable catalog id like "bg3-wiki").
+  // When present, registration is idempotent on this id; when absent the
+  // handler mints a random UUID.
+  id: z.string().min(1).max(64).optional(),
   name: z.string().min(1).max(256),
   baseUrl: z.string().url().max(2048),
   tier: z.number().int().min(1).max(1000),

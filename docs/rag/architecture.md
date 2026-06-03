@@ -36,25 +36,32 @@ never calls Workers AI, Vectorize, R2, or OpenRouter.
 
 ## Ingestion flow
 
+The crawl CLI does two things only: it **registers the source** (once,
+idempotently) and **stores raw pages**. Indexing is a **separate, manual step**
+the operator triggers per page — the crawler does NOT call the index endpoint.
+
 ```text
 pnpm crawl
   │
-  ├─ robots.ts         honour robots.txt disallow rules, rate-limit per host
-  ├─ sitemap.ts        fetch sitemap XML, enumerate page URLs
+  ├─ POST /v1/kb/sources         register source (id, name, baseUrl, tier)
+  │                              idempotent on id — re-runs are a no-op
+  ├─ robots.ts                   honour robots.txt disallow rules, rate-limit per host
+  ├─ sitemap.ts                  fetch sitemap XML, enumerate page URLs
   └─ pipeline.ts       for each URL:
        │
-       ├─ POST /v1/kb/sources         register source (name, baseUrl, tier)
        ├─ POST /v1/kb/pages           store raw HTML + content_hash to D1 + R2
        │                              ADR-0016: UNIQUE(source_id, url) identity
-       ├─ POST /v1/kb/crawl-state     persist cursor + status for resume
-       └─ POST /v1/kb/pages/:id/index
-            │
-            ├─ html-clean.ts          strip boilerplate, convert to markdown
-            ├─ chunking.ts            sliding-window split (800 / 160 default)
-            ├─ EmbeddingProvider      embed each chunk (Workers AI or mock)
-            ├─ VectorIndexClient      upsert vectors (Vectorize or mock)
-            ├─ repo/chunks            write chunk rows to D1
-            └─ repo/embedding-state   update ledger (chunk_id → vector_id)
+       └─ POST /v1/kb/crawl-state     persist cursor + status for resume
+
+# Indexing — a SEPARATE manual step, NOT done inline by the crawler:
+POST /v1/kb/pages/:id/index
+  │
+  ├─ html-clean.ts          strip boilerplate, convert to markdown
+  ├─ chunking.ts            sliding-window split (1200 / 150 default)
+  ├─ EmbeddingProvider      embed each chunk (Workers AI or mock)
+  ├─ VectorIndexClient      upsert vectors (Vectorize or mock)
+  ├─ repo/chunks            write chunk rows to D1
+  └─ repo/embedding-state   update ledger (chunk_id → vector_id)
 ```
 
 Page identity is `UNIQUE(source_id, url)` — `content_hash` is a

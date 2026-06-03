@@ -230,14 +230,14 @@ jobs:
         # valid; treat 403 as a pass to avoid false positives on those.
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --max-concurrency 4 --accept '200,203,206,403' 'docs/**/*.md' 'CLAUDE.md' 'README.md' 'apps/reyn-bg3-mod/README.md' 'docs/rag/**/*.md'
+          args: --no-progress --max-concurrency 4 --accept '200,203,206,403' 'docs/**/*.md' 'CLAUDE.md' 'README.md' 'apps/reyn-bg3-mod/README.md'
           fail: true
 
       - name: Spell check (cspell)
         run: |
           npx --yes cspell --no-progress \
             --config cspell.json \
-            "docs/**/*.md" "CLAUDE.md" "README.md" "apps/reyn-bg3-mod/README.md" "docs/rag/**/*.md"
+            "docs/**/*.md" "CLAUDE.md" "README.md" "apps/reyn-bg3-mod/README.md"
 
   # ─── Secrets scan ──────────────────────────────────────────────────
   # Gitleaks scans the working tree + git history for accidentally

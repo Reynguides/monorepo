@@ -70,8 +70,9 @@ OPENROUTER_API_KEY=sk-or-…
 
 ### 1. Crawl sources
 
-The CLI tool at `apps/reyn-rag-worker/tools/crawl.ts` fetches pages from the
-configured sources and pushes them to the worker via the KB write endpoints.
+The CLI tool at `apps/reyn-rag-worker/tools/crawl.ts` registers the source and
+fetches its pages, pushing the raw HTML to the worker via the KB write
+endpoints. It does **not** index pages — see step 2.
 
 ```bash
 cd apps/reyn-rag-worker
@@ -82,23 +83,33 @@ export KB_INGEST_KEY=<your-key>
 pnpm crawl --source bg3-wiki --limit 100
 ```
 
-The CLI respects `robots.txt`, rate-limits per host, and persists a cursor via
+Before crawling, the CLI registers the catalog source via
+`POST /v1/kb/sources` using the catalog id (e.g. `bg3-wiki`) — idempotently, so
+re-runs are a no-op. This must succeed first, otherwise page writes 404 on the
+missing `sources` row. The CLI then respects `robots.txt`, rate-limits per host,
+stores raw pages via `POST /v1/kb/pages`, and persists a cursor via
 `POST /v1/kb/crawl-state` so interrupted runs can resume. See
 `docs/rag/sourcing-and-licensing.md` for the per-source licensing posture.
 
 ### 2. Index pages
 
-Each stored page must be indexed before it is searchable. The index endpoint
-cleans the HTML, splits it into chunks, embeds each chunk via the embedding
-provider, and upserts the vectors into Vectorize.
+Indexing is a **separate step** from crawling — the crawl CLI only stores raw
+pages, it does not index them. Each stored page must be indexed before it is
+searchable. The index endpoint cleans the HTML, splits it into chunks, embeds
+each chunk via the embedding provider, and upserts the vectors into Vectorize.
 
 ```bash
 # Index a single page by ID
 curl -X POST "$RAG_BASE_URL/v1/kb/pages/<pageId>/index" \
      -H "Authorization: Bearer $KB_INGEST_KEY"
 
-# The crawl CLI indexes pages inline during ingestion — manual calls are
-# only needed to re-index after a chunk-size or model change.
+# To index a whole source, list its pages and POST /index for each. The page
+# ids come from GET /v1/kb/pages?source=<id> (paginate via nextCursor):
+for id in $(curl -s "$RAG_BASE_URL/v1/kb/pages?source=bg3-wiki&limit=500" \
+              | python3 -c 'import sys,json;[print(p["id"]) for p in json.load(sys.stdin)["items"]]'); do
+  curl -X POST "$RAG_BASE_URL/v1/kb/pages/$id/index" \
+       -H "Authorization: Bearer $KB_INGEST_KEY"
+done
 ```
 
 ### 3. Verify corpus integrity

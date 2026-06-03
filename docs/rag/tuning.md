@@ -88,8 +88,8 @@ Suggested sweep range (bge-base-en-v1.5, 768 dims):
 | `CHUNK_MAX_CHARS` | `CHUNK_OVERLAP_CHARS` | Notes |
 |---|---|---|
 | 400 | 80 | Smallest — high precision, may miss cross-sentence context |
-| 800 | 160 | Default — balanced |
-| 1200 | 240 | Larger — more context per chunk, slower embedding |
+| 800 | 160 | Smaller — tighter snippets, may miss cross-sentence context |
+| 1200 | 150 | Default — balanced |
 
 Record results in the table at the bottom of this file.
 
@@ -138,4 +138,4 @@ without error.
 
 | Date | Chunk | Overlap | Model | n | MeanHitRate | MeanRecall | P95 ms | Notes |
 |---|---|---|---|---|---|---|---|---|
-| — | 800 | 160 | bge-base | — | — | — | — | Baseline (not yet run against live) |
+| — | 1200 | 150 | bge-base | — | — | — | — | Baseline (not yet run against live) |

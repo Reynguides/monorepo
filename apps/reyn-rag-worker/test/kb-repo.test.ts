@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { env } from "cloudflare:test";
 import "./helpers/setup.ts";
-import { insertSource, getSourceById, listSources } from "../src/repo/sources.ts";
+import { insertSource, upsertSource, getSourceById, listSources } from "../src/repo/sources.ts";
 import { upsertImageByPageUrl, listImagesByPage, getImageById } from "../src/repo/images.ts";
 import { newId } from "../src/lib/id.ts";
 import { sha256Hex } from "../src/lib/content-hash.ts";
@@ -26,6 +26,33 @@ describe("sources repo", () => {
 
   it("returns null for a missing source", async () => {
     expect(await getSourceById(env.KB_DB, "nope")).toBeNull();
+  });
+
+  it("upsertSource is idempotent on id and preserves the original row", async () => {
+    const id = "catalog-id";
+    const created = await upsertSource(
+      env.KB_DB,
+      { id, name: "First", base_url: "https://first.test", tier: 1 },
+      1000,
+    );
+    expect(created).toBe(id);
+
+    // Re-upsert with different fields + a later timestamp → IGNORE keeps the
+    // original row (name, base_url, tier, created_at all unchanged).
+    const again = await upsertSource(
+      env.KB_DB,
+      { id, name: "Second", base_url: "https://second.test", tier: 9 },
+      2000,
+    );
+    expect(again).toBe(id);
+
+    const row = await getSourceById(env.KB_DB, id);
+    expect(row!.name).toBe("First");
+    expect(row!.tier).toBe(1);
+    expect(row!.created_at).toBe(1000);
+
+    const all = await listSources(env.KB_DB);
+    expect(all.filter((s) => s.id === id)).toHaveLength(1);
   });
 });
 
