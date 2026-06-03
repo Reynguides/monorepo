@@ -195,8 +195,20 @@ describe("readMeta", () => {
 describe("buildPrompt", () => {
   it("embeds the context and the question with grounding instructions", () => {
     const prompt = buildPrompt("CTX", "What is X?");
-    expect(prompt).toContain("Context:\nCTX");
+    expect(prompt).toContain("<context>\nCTX\n</context>");
     expect(prompt).toContain("Question: What is X?");
-    expect(prompt).toContain("only the context");
+    expect(prompt).toContain("untrusted reference data");
+  });
+
+  it("wraps context in <context> delimiters and includes the question", () => {
+    const ctx = "Astarion is a vampire spawn companion.";
+    const q = "Who is Astarion?";
+    const prompt = buildPrompt(ctx, q);
+    // (a) The provided context text appears in the output.
+    expect(prompt).toContain(ctx);
+    // (b) Context is wrapped in the explicit delimiters.
+    expect(prompt).toContain(`<context>\n${ctx}\n</context>`);
+    // (b) The question is present.
+    expect(prompt).toContain(`Question: ${q}`);
   });
 });
