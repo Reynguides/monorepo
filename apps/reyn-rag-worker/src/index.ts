@@ -10,6 +10,7 @@ import { indexPageHandler } from "./handlers/kb/index-page.ts";
 import { getImageHandler } from "./handlers/kb/images-read.ts";
 import { verifyHandler } from "./handlers/kb/verify.ts";
 import { getCrawlStateHandler, upsertCrawlStateHandler } from "./handlers/kb/crawl-state.ts";
+import { ragQueryHandler } from "./handlers/rag/query.ts";
 
 export const app = new Hono<{ Bindings: Env }>();
 
@@ -28,5 +29,8 @@ app.get("/v1/kb/pages/:id", getPageHandler);
 app.get("/v1/kb/images/:id", getImageHandler);
 app.get("/v1/kb/crawl-state/:sourceId", getCrawlStateHandler);
 app.get("/v1/kb/verify", verifyHandler);
+
+// RAG query — open (reads are open per ADR-0014).
+app.post("/v1/rag/query", ragQueryHandler);
 
 export default app;

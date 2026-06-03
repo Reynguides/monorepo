@@ -4,6 +4,7 @@ import "./helpers/setup.ts";
 import { newId } from "../src/lib/id.ts";
 import {
   deleteChunksByPageId,
+  getChunksByIds,
   insertChunks,
   listAllChunks,
   listChunksByPageId,
@@ -49,6 +50,20 @@ describe("chunks repo", () => {
 
   it("insertChunks is a no-op for an empty batch", async () => {
     await expect(insertChunks(env.KB_DB, [])).resolves.toBeUndefined();
+  });
+
+  it("getChunksByIds returns rows in the requested order, skipping unknown ids", async () => {
+    const pageId = newId();
+    await insertChunks(env.KB_DB, [chunk(pageId, 0), chunk(pageId, 1), chunk(pageId, 2)]);
+
+    // Request out of natural order with an unknown id mixed in.
+    const ids = [`${pageId}:2`, "no-such-id", `${pageId}:0`];
+    const rows = await getChunksByIds(env.KB_DB, ids);
+    expect(rows.map((r) => r.id)).toEqual([`${pageId}:2`, `${pageId}:0`]);
+  });
+
+  it("getChunksByIds returns [] for an empty id list", async () => {
+    expect(await getChunksByIds(env.KB_DB, [])).toEqual([]);
   });
 });
 

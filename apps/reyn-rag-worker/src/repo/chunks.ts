@@ -56,6 +56,32 @@ export async function listChunksByPageId(db: D1Database, pageId: string): Promis
   return rows.results;
 }
 
+/**
+ * Fetches chunk rows for an arbitrary set of ids (the matched chunks from a
+ * vector query) and returns them in the SAME order as `ids` — preserving the
+ * caller's re-ranked order, which D1's `IN (...)` does not. Unknown ids are
+ * skipped. An empty `ids` returns `[]` without a query.
+ */
+export async function getChunksByIds(db: D1Database, ids: readonly string[]): Promise<ChunkRow[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = await db
+    .prepare(`SELECT ${CHUNK_COLS} FROM chunks WHERE id IN (${placeholders})`)
+    .bind(...ids)
+    .all<ChunkRow>();
+  const byId = new Map(rows.results.map((r) => [r.id, r]));
+  const ordered: ChunkRow[] = [];
+  for (const id of ids) {
+    const row = byId.get(id);
+    if (row !== undefined) {
+      ordered.push(row);
+    }
+  }
+  return ordered;
+}
+
 /** Every chunk row across the corpus, ordered by (page, ord) (verify). */
 export async function listAllChunks(db: D1Database): Promise<ChunkRow[]> {
   const rows = await db
