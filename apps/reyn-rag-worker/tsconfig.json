@@ -29,6 +29,7 @@
     "src/**/*",
     "test/**/*",
     "tools/**/*",
+    "eval/**/*",
     "env.d.ts",
     "vitest.config.ts",
     "eslint.config.js"
