@@ -10,17 +10,20 @@ export default defineWorkersConfig({
       workers: {
         wrangler: { configPath: "./wrangler.toml" },
         miniflare: {
-          // D1 binding is read from wrangler.toml. Pool v0.8 errors out
+          // D1 + R2 bindings are read from wrangler.toml. Pool v0.8 errors out
           // ("Expected object, received string") when both layers declare
-          // the same binding, so keep KB_DB only in wrangler.toml.
+          // the same binding, so keep KB_DB / KB_BUCKET only in wrangler.toml;
+          // miniflare provides the R2 emulator for KB_BUCKET locally.
           //
-          // Vectorize + Workers AI have NO local emulator, so all four provider
-          // selector vars are forced to "mock" here — tests never touch live
-          // Cloudflare. Real adapters are unit-tested with injected stubs.
+          // R2 HAS a local emulator, so OBJECT_STORE="r2" here exercises the real
+          // R2ObjectStore against local R2 (store→get persists across requests
+          // within a test). Vectorize + Workers AI have NO emulator, so those
+          // selector vars stay "mock" — tests never touch live Cloudflare. D1+R2
+          // reset between tests via vitest-pool-workers' isolated per-test storage.
           bindings: {
             EMBEDDING_PROVIDER: "mock",
             VECTOR_INDEX: "mock",
-            OBJECT_STORE: "mock",
+            OBJECT_STORE: "r2",
             LLM_PROVIDER: "mock",
             KB_INGEST_KEY: "test-ingest-key",
             KB_MIGRATIONS: kbMigrations,

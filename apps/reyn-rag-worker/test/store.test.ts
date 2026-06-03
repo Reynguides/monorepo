@@ -54,6 +54,29 @@ describe("MockObjectStore", () => {
     expect(await s.get("nope")).toBeNull();
   });
 
+  it("round-trips bytes + content-type via getBytes", async () => {
+    const s = new MockObjectStore();
+    const bytes = new Uint8Array([1, 2, 3, 255]);
+    const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    await s.put("img", buf, { contentType: "image/png" });
+    const got = await s.getBytes("img");
+    expect(got).not.toBeNull();
+    expect(new Uint8Array(got!.body)).toEqual(bytes);
+    expect(got!.contentType).toBe("image/png");
+  });
+
+  it("getBytes returns null content-type when none was supplied", async () => {
+    const s = new MockObjectStore();
+    await s.put("k", "v");
+    const got = await s.getBytes("k");
+    expect(got!.contentType).toBeNull();
+  });
+
+  it("getBytes returns null for a missing key", async () => {
+    const s = new MockObjectStore();
+    expect(await s.getBytes("nope")).toBeNull();
+  });
+
   it("deletes keys", async () => {
     const s = new MockObjectStore();
     await s.put("k", "v");
@@ -63,7 +86,7 @@ describe("MockObjectStore", () => {
 });
 
 describe("R2ObjectStore", () => {
-  function stub(getResult: { text(): Promise<string> } | null): R2BucketBinding & {
+  function stub(getResult: unknown): R2BucketBinding & {
     put: ReturnType<typeof vi.fn>;
     get: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
@@ -97,6 +120,32 @@ describe("R2ObjectStore", () => {
   it("returns null on a miss", async () => {
     const s = stub(null);
     expect(await new R2ObjectStore(s).get("k")).toBeNull();
+  });
+
+  it("getBytes reads arrayBuffer + content-type", async () => {
+    const bytes = new Uint8Array([9, 8, 7]);
+    const s = stub({
+      text: () => Promise.resolve(""),
+      arrayBuffer: () => Promise.resolve(bytes.buffer),
+      httpMetadata: { contentType: "image/jpeg" },
+    });
+    const got = await new R2ObjectStore(s).getBytes("k");
+    expect(new Uint8Array(got!.body)).toEqual(bytes);
+    expect(got!.contentType).toBe("image/jpeg");
+  });
+
+  it("getBytes yields null content-type when httpMetadata is absent", async () => {
+    const s = stub({
+      text: () => Promise.resolve(""),
+      arrayBuffer: () => Promise.resolve(new Uint8Array([1]).buffer),
+    });
+    const got = await new R2ObjectStore(s).getBytes("k");
+    expect(got!.contentType).toBeNull();
+  });
+
+  it("getBytes returns null on a miss", async () => {
+    const s = stub(null);
+    expect(await new R2ObjectStore(s).getBytes("k")).toBeNull();
   });
 
   it("delegates delete", async () => {

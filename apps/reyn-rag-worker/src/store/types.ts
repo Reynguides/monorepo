@@ -8,9 +8,21 @@ export interface PutOptions {
   contentType?: string;
 }
 
+/** Raw bytes plus the stored content-type, for binary reads (e.g. images). */
+export interface ObjectBytes {
+  body: ArrayBuffer;
+  contentType: string | null;
+}
+
 export interface IObjectStore {
   put(key: string, value: string | ArrayBuffer, opts?: PutOptions): Promise<void>;
   get(key: string): Promise<string | null>;
+  /**
+   * Reads an object as raw bytes with its stored content-type, or null on miss.
+   * Used to stream non-text payloads (images) back verbatim; `get` decodes to
+   * text and is for HTML/markdown.
+   */
+  getBytes(key: string): Promise<ObjectBytes | null>;
   delete(key: string): Promise<void>;
 }
 

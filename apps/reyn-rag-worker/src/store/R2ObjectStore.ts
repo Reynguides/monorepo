@@ -1,8 +1,13 @@
-import type { IObjectStore, PutOptions } from "./types.ts";
+import type { IObjectStore, ObjectBytes, PutOptions } from "./types.ts";
 
-/** Object returned by R2 `get`; we only consume its `text()` accessor. */
+/**
+ * Object returned by R2 `get`; we consume `text()` for HTML/markdown and
+ * `arrayBuffer()` + `httpMetadata.contentType` for binary reads (images).
+ */
 interface R2GetResult {
   text(): Promise<string>;
+  arrayBuffer(): Promise<ArrayBuffer>;
+  httpMetadata?: { contentType?: string };
 }
 
 /**
@@ -46,6 +51,15 @@ export class R2ObjectStore implements IObjectStore {
       return null;
     }
     return await obj.text();
+  }
+
+  public async getBytes(key: string): Promise<ObjectBytes | null> {
+    const obj = await this.bucket.get(key);
+    if (obj === null) {
+      return null;
+    }
+    const body = await obj.arrayBuffer();
+    return { body, contentType: obj.httpMetadata?.contentType ?? null };
   }
 
   public async delete(key: string): Promise<void> {
