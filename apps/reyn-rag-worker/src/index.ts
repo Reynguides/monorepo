@@ -8,6 +8,7 @@ import { storeImageHandler } from "./handlers/kb/images-write.ts";
 import { getPageHandler, listPagesHandler } from "./handlers/kb/pages-read.ts";
 import { getImageHandler } from "./handlers/kb/images-read.ts";
 import { verifyHandler } from "./handlers/kb/verify.ts";
+import { getCrawlStateHandler, upsertCrawlStateHandler } from "./handlers/kb/crawl-state.ts";
 
 export const app = new Hono<{ Bindings: Env }>();
 
@@ -17,11 +18,13 @@ app.get("/v1/health", healthHandler);
 app.post("/v1/kb/sources", requireIngestKey, storeSourceHandler);
 app.post("/v1/kb/pages", requireIngestKey, storePageHandler);
 app.post("/v1/kb/images", requireIngestKey, storeImageHandler);
+app.post("/v1/kb/crawl-state", requireIngestKey, upsertCrawlStateHandler);
 
 // KB reads — open (ADR-0014).
 app.get("/v1/kb/pages", listPagesHandler);
 app.get("/v1/kb/pages/:id", getPageHandler);
 app.get("/v1/kb/images/:id", getImageHandler);
+app.get("/v1/kb/crawl-state/:sourceId", getCrawlStateHandler);
 app.get("/v1/kb/verify", verifyHandler);
 
 export default app;

@@ -4,7 +4,12 @@ import app from "../src/index.ts";
 import "./helpers/setup.ts";
 import { call } from "./helpers/client.ts";
 
-const WRITE_ENDPOINTS = ["/v1/kb/sources", "/v1/kb/pages", "/v1/kb/images"] as const;
+const WRITE_ENDPOINTS = [
+  "/v1/kb/sources",
+  "/v1/kb/pages",
+  "/v1/kb/images",
+  "/v1/kb/crawl-state",
+] as const;
 
 describe("ingest-key auth on KB write endpoints (ADR-0014)", () => {
   it("rejects writes with no bearer key (401)", async () => {
