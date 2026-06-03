@@ -3,7 +3,6 @@ import { env } from "cloudflare:test";
 import "./helpers/setup.ts";
 import { newId } from "../src/lib/id.ts";
 import {
-  countAllChunks,
   deleteChunksByPageId,
   insertChunks,
   listAllChunks,
@@ -33,7 +32,7 @@ function chunk(pageId: string, ord: number): NewChunk {
 }
 
 describe("chunks repo", () => {
-  it("inserts, lists in ord order, counts, and deletes by page", async () => {
+  it("inserts, lists in ord order, lists all, and deletes by page", async () => {
     const pageId = newId();
     await insertChunks(env.KB_DB, [chunk(pageId, 0), chunk(pageId, 1), chunk(pageId, 2)]);
 
@@ -41,7 +40,6 @@ describe("chunks repo", () => {
     expect(list.map((c) => c.ord)).toEqual([0, 1, 2]);
     expect(list[0]!.token_count).toBe(3);
 
-    expect(await countAllChunks(env.KB_DB)).toBeGreaterThanOrEqual(3);
     const all = await listAllChunks(env.KB_DB);
     expect(all.some((c) => c.page_id === pageId)).toBe(true);
 

@@ -3,6 +3,8 @@ import { env } from "cloudflare:test";
 import "./helpers/setup.ts";
 import { call } from "./helpers/client.ts";
 import { createVectorIndexClient, resetMockVectorIndexClient } from "../src/vector/factory.ts";
+import { buildVectorRows } from "../src/handlers/kb/index-page.ts";
+import type { Chunk } from "../src/lib/chunking.ts";
 
 const AUTH = { Authorization: "Bearer test-ingest-key" };
 
@@ -224,5 +226,39 @@ describe("POST /v1/kb/pages/:id/index", () => {
     const pageId = await storePage(sourceId, "https://bg3.wiki/NoAuth", "<p>x</p>");
     const res = await call(`/v1/kb/pages/${pageId}/index`, { method: "POST" });
     expect(res.status).toBe(401);
+  });
+});
+
+describe("buildVectorRows", () => {
+  const pieces: Chunk[] = [
+    { ord: 0, text: "first chunk" },
+    { ord: 1, text: "second chunk" },
+  ];
+  const meta = { pageId: "page-1", url: "https://bg3.wiki/X", sourceTier: 2 };
+
+  it("pairs each chunk with its embedding into a vector record", () => {
+    const embeddings = [
+      [0.1, 0.2],
+      [0.3, 0.4],
+    ];
+    const rows = buildVectorRows(pieces, embeddings, meta);
+    expect(rows).toEqual([
+      {
+        id: "page-1:0",
+        values: [0.1, 0.2],
+        metadata: { page_id: "page-1", chunk_id: "page-1:0", source_tier: 2, url: meta.url },
+      },
+      {
+        id: "page-1:1",
+        values: [0.3, 0.4],
+        metadata: { page_id: "page-1", chunk_id: "page-1:1", source_tier: 2, url: meta.url },
+      },
+    ]);
+  });
+
+  it("throws when the embedding count does not match the chunk count", () => {
+    // One vector for two chunks → must throw rather than silently corrupt the
+    // index (the guard branch is exercised here, no istanbul-ignore needed).
+    expect(() => buildVectorRows(pieces, [[0.1, 0.2]], meta)).toThrow(/embedding count mismatch/);
   });
 });

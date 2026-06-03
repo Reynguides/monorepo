@@ -38,6 +38,14 @@ export class WorkersAiEmbeddingProvider implements IEmbeddingProvider {
     if (data === undefined) {
       throw new EmbeddingError("Workers AI embedding returned no data");
     }
+    if (data.length !== texts.length) {
+      // The provider contract is one vector per input, in order. A length
+      // mismatch would silently corrupt the chunk↔vector pairing downstream
+      // (zero-length vectors upserted + ledger rows recorded), so fail loud.
+      throw new EmbeddingError(
+        `Workers AI embedding count mismatch: expected ${texts.length}, got ${data.length}`,
+      );
+    }
     return data;
   }
 }

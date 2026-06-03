@@ -56,15 +56,6 @@ export async function listChunksByPageId(db: D1Database, pageId: string): Promis
   return rows.results;
 }
 
-/** Total chunk count across the corpus (verify reconciliation). */
-export async function countAllChunks(db: D1Database): Promise<number> {
-  const row = await db.prepare("SELECT COUNT(*) AS n FROM chunks").first<{ n: number }>();
-  // COUNT(*) always returns exactly one row, so `?? 0` is a defensive fallback
-  // that the public API can't reach.
-  /* istanbul ignore next -- @preserve unreachable: COUNT(*) always yields a row */
-  return row?.n ?? 0;
-}
-
 /** Every chunk row across the corpus, ordered by (page, ord) (verify). */
 export async function listAllChunks(db: D1Database): Promise<ChunkRow[]> {
   const rows = await db

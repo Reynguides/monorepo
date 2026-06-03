@@ -104,42 +104,74 @@ function toFittingUnits(blocks: readonly string[], maxChars: number, overlapChar
   return units;
 }
 
-/** Greedily packs fitting units into overlapping chunks (the core loop). */
+/**
+ * Opens a fresh non-standalone buffer seeded with the pending `carry` so
+ * adjacent chunks share context. The carry is part of the buffer's budget: a
+ * non-standalone unit is `<= maxChars`, so only as much trailing carry as still
+ * fits under `maxChars` is seeded (best-effort overlap), trimming from the front
+ * if needed. This guarantees the opened buffer is `<= maxChars`.
+ */
+function seedBuffer(carry: string, unitText: string, maxChars: number): string {
+  if (carry.length === 0) {
+    return unitText;
+  }
+  const carryBudget = maxChars - unitText.length - 2; // 2 = "\n\n" separator
+  if (carryBudget <= 0) {
+    return unitText;
+  }
+  const seed = carry.length > carryBudget ? carry.slice(carry.length - carryBudget) : carry;
+  return `${seed}\n\n${unitText}`;
+}
+
+/**
+ * Greedily packs fitting units into overlapping chunks (the core loop).
+ *
+ * Overlap is made part of the size budget rather than prepended at emit time:
+ * each fresh non-standalone buffer is *seeded* with the previous chunk's trailing
+ * `overlapChars` (the `carry`), so the normal greedy `candidate > maxChars` flush
+ * logic already accounts for it. This keeps every emitted chunk `<= maxChars`
+ * (the carry can no longer push a chunk over the cap). Standalone pieces — from
+ * hard-splitting an oversized block — are emitted on their own without a carry
+ * seed (they already exactly fill `maxChars`).
+ */
 function packUnits(units: readonly Unit[], maxChars: number, overlapChars: number): Chunk[] {
   const chunks: Chunk[] = [];
   let buffer = "";
+  // Trailing overlap of the last emitted chunk, seeded into the next buffer.
   let carry = "";
 
-  const emit = (withCarry: boolean): void => {
-    const body = buffer.trim();
+  const emit = (): void => {
+    const text = buffer.trim();
     buffer = "";
-    if (body.length === 0) {
+    if (text.length === 0) {
       return;
     }
-    const text = withCarry && carry.length > 0 ? `${carry}\n\n${body}` : body;
     chunks.push({ ord: chunks.length, text });
     carry = tailOverlap(text, overlapChars);
   };
 
   for (const unit of units) {
     if (unit.standalone) {
-      // Flush any pending buffer, then emit the pre-sized piece on its own.
-      emit(true);
+      // Flush any pending buffer, then emit the pre-sized piece on its own
+      // (no carry seed — it already fills maxChars exactly).
+      emit();
       buffer = unit.text;
-      emit(false);
+      emit();
       continue;
     }
-    const candidate = buffer.length === 0 ? unit.text : `${buffer}\n\n${unit.text}`;
-    // Account for the overlap prefix that will be prepended on emit.
-    const projected = carry.length > 0 ? carry.length + 2 + candidate.length : candidate.length;
-    if (buffer.length > 0 && projected > maxChars) {
-      emit(true);
-      buffer = unit.text;
+    if (buffer.length === 0) {
+      buffer = seedBuffer(carry, unit.text, maxChars);
+      continue;
+    }
+    const candidate = `${buffer}\n\n${unit.text}`;
+    if (candidate.length > maxChars) {
+      emit();
+      buffer = seedBuffer(carry, unit.text, maxChars);
     } else {
       buffer = candidate;
     }
   }
-  emit(true);
+  emit();
   return chunks;
 }
 

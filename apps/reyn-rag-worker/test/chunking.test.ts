@@ -26,12 +26,25 @@ describe("chunkText", () => {
 
   it("carries overlapChars from the previous chunk into the next", () => {
     const a = "A".repeat(50);
-    const b = "B".repeat(50);
+    const b = "B".repeat(40);
     const out = chunkText(`${a}\n\n${b}`, { maxChars: 60, overlapChars: 10 });
     expect(out.length).toBeGreaterThanOrEqual(2);
+    // Every emitted chunk stays within the hard size cap (carry is budgeted in).
+    expect(out.every((c) => c.text.length <= 60)).toBe(true);
     // The second chunk should start with the trailing overlap of the first.
     const firstTail = out[0]!.text.slice(out[0]!.text.length - 10);
     expect(out[1]!.text.startsWith(firstTail)).toBe(true);
+  });
+
+  it("never exceeds maxChars at the production config even when carry is prepended", () => {
+    // Regression for the carry-prefix overflow: at maxChars=1200/overlap=150,
+    // several ~1150-char paragraphs used to emit 1302-char chunks (carry added
+    // at emit time without a size re-check). The carry is now part of the budget.
+    const para = "p".repeat(1150);
+    const text = [para, para, para, para, para].join("\n\n");
+    const out = chunkText(text, { maxChars: 1200, overlapChars: 150 });
+    expect(out.length).toBeGreaterThan(1);
+    expect(out.every((c) => c.text.length <= 1200)).toBe(true);
   });
 
   it("starts a new chunk at a heading boundary", () => {

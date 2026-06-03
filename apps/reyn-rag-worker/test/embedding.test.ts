@@ -82,4 +82,12 @@ describe("WorkersAiEmbeddingProvider", () => {
     const p = new WorkersAiEmbeddingProvider({ run });
     await expect(p.embed(["a"])).rejects.toBeInstanceOf(EmbeddingError);
   });
+
+  it("throws when AI returns fewer vectors than inputs (count contract)", async () => {
+    // One input but the model returned zero vectors → would otherwise corrupt
+    // the chunk↔vector pairing downstream. Must fail loud instead.
+    const run = vi.fn().mockResolvedValue({ data: [[0.1, 0.2]] });
+    const p = new WorkersAiEmbeddingProvider({ run });
+    await expect(p.embed(["a", "b"])).rejects.toBeInstanceOf(EmbeddingError);
+  });
 });

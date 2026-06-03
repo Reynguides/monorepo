@@ -76,6 +76,40 @@ interface BuiltRows {
   vectorRecords: VectorRecord[];
 }
 
+/** Per-page vector metadata shared by every vector record. */
+interface VectorMeta {
+  pageId: string;
+  url: string;
+  sourceTier: number | null;
+}
+
+/**
+ * Pairs each chunk with its embedding, in lockstep, into Vectorize records.
+ * Pure + synchronous. Enforces the embedding-count contract (one vector per
+ * chunk, in order): a mismatch would silently corrupt the index (zero-length
+ * or misaligned vectors), so it throws instead — the caller never reaches the
+ * upsert. This makes the guard a real, testable branch (no istanbul-ignore).
+ */
+export function buildVectorRows(
+  pieces: readonly Chunk[],
+  embeddings: readonly number[][],
+  meta: VectorMeta,
+): VectorRecord[] {
+  if (embeddings.length !== pieces.length) {
+    throw new Error(
+      `embedding count mismatch: expected ${pieces.length}, got ${embeddings.length}`,
+    );
+  }
+  return pieces.map((piece, i) => {
+    const id = vectorId(meta.pageId, piece.ord);
+    return {
+      id,
+      values: embeddings[i]!,
+      metadata: { page_id: meta.pageId, chunk_id: id, source_tier: meta.sourceTier, url: meta.url },
+    };
+  });
+}
+
 /** Builds the chunk + ledger + vector rows for a page's chunk set, in lockstep. */
 async function buildRows(
   pageId: string,
@@ -85,9 +119,9 @@ async function buildRows(
   embeddings: readonly number[][],
   now: number,
 ): Promise<BuiltRows> {
+  const vectorRecords = buildVectorRows(pieces, embeddings, { pageId, url, sourceTier });
   const chunkRows: NewChunk[] = [];
   const ledgerRows: NewEmbeddingState[] = [];
-  const vectorRecords: VectorRecord[] = [];
   for (const piece of pieces) {
     const id = vectorId(pageId, piece.ord);
     chunkRows.push({
@@ -100,15 +134,6 @@ async function buildRows(
       tokenCount: approxTokenCount(piece.text),
     });
     ledgerRows.push({ chunkId: id, model: INDEX_MODEL, vectorId: id, indexedAt: now });
-    // The provider returns exactly one vector per input text (in order), so the
-    // `?? []` is a defensive fallback the public API can't reach.
-    /* istanbul ignore next -- @preserve unreachable: one embedding per chunk */
-    const values = embeddings[piece.ord] ?? [];
-    vectorRecords.push({
-      id,
-      values,
-      metadata: { page_id: pageId, chunk_id: id, source_tier: sourceTier, url },
-    });
   }
   return { chunkRows, ledgerRows, vectorRecords };
 }
