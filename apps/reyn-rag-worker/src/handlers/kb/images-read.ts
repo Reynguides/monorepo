@@ -23,7 +23,13 @@ export const getImageHandler: Handler<{ Bindings: Env }> = async (c) => {
     return fail(c, 404, "image_bytes_missing");
   }
 
+  // Hardening against stored XSS: the stored content-type is constrained to a
+  // strict image allowlist at upload, but a defence-in-depth set of headers stops
+  // a browser from sniffing/executing the bytes if drift ever serves something else.
   return c.body(obj.body, 200, {
     "Content-Type": obj.contentType ?? "application/octet-stream",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'none'",
+    "Content-Disposition": "inline",
   });
 };

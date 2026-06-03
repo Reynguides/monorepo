@@ -118,6 +118,11 @@ describe("POST /v1/kb/pages", () => {
     const firstJson: PageResult = await first.json();
     const hashBefore = await contentHashOf(firstJson.pageId);
 
+    // Capture the R2 upload marker after the first store (deterministic key).
+    const key = `pages/${firstJson.pageId}/raw.html`;
+    const headBefore = await env.KB_BUCKET.head(key);
+    const uploadedBefore = headBefore!.uploaded.getTime();
+
     const second = await storePage(sourceId, url, "<p>Karlach</p>");
     expect(second.status).toBe(200);
     const secondJson: PageResult = await second.json();
@@ -125,6 +130,10 @@ describe("POST /v1/kb/pages", () => {
     expect(secondJson.pageId).toBe(firstJson.pageId);
 
     expect(await contentHashOf(firstJson.pageId)).toBe(hashBefore);
+
+    // R2 blob was NOT rewritten on the idempotent re-store.
+    const headAfter = await env.KB_BUCKET.head(key);
+    expect(headAfter!.uploaded.getTime()).toBe(uploadedBefore);
   });
 
   it("supersedes in place when html changes (same pageId, new hash, R2 overwritten)", async () => {
@@ -133,6 +142,10 @@ describe("POST /v1/kb/pages", () => {
     const first = await storePage(sourceId, url, "<p>v1</p>");
     const firstJson: PageResult = await first.json();
     const hashV1 = await contentHashOf(firstJson.pageId);
+
+    const key = `pages/${firstJson.pageId}/raw.html`;
+    const headBefore = await env.KB_BUCKET.head(key);
+    const uploadedBefore = headBefore!.uploaded.getTime();
 
     const second = await storePage(sourceId, url, "<p>v2 — updated</p>");
     expect(second.status).toBe(200); // existing row → 200, not 201
@@ -150,7 +163,10 @@ describe("POST /v1/kb/pages", () => {
       .first<{ n: number }>();
     expect(count!.n).toBe(1);
 
-    // R2 raw blob reflects the new content.
+    // R2 raw blob reflects the new content AND was rewritten (uploaded changed).
+    const headAfter = await env.KB_BUCKET.head(key);
+    expect(headAfter!.uploaded.getTime()).not.toBe(uploadedBefore);
+
     const get = await call(`/v1/kb/pages/${firstJson.pageId}`);
     const detail: PageDetail = await get.json();
     expect(detail.html).toBe("<p>v2 — updated</p>");

@@ -43,7 +43,9 @@ export const StoreImageRequest = z.object({
     .string()
     .min(1)
     .max(16 * 1024 * 1024),
-  contentType: z.string().min(1).max(256),
+  // Strict allowlist — SVG is intentionally excluded (inline-script / stored-XSS
+  // risk). A disallowed type fails validation → 400 validation_failed.
+  contentType: z.enum(["image/png", "image/jpeg", "image/webp", "image/gif"]),
 });
 
 export type StoreImageRequest = z.infer<typeof StoreImageRequest>;

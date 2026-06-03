@@ -6,7 +6,20 @@
  */
 export async function sha256Hex(input: string): Promise<string> {
   const bytes = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return hexDigest(bytes);
+}
+
+/**
+ * SHA-256 hex digest of raw bytes. Used for image uploads so the change-detector
+ * hashes the DECODED bytes (not the base64 string), making it the byte-level
+ * identity of the stored blob.
+ */
+export async function sha256HexBytes(buf: ArrayBuffer): Promise<string> {
+  return hexDigest(buf);
+}
+
+async function hexDigest(data: ArrayBuffer | Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", data);
   let out = "";
   for (const b of new Uint8Array(digest)) {
     out += b.toString(16).padStart(2, "0");

@@ -35,6 +35,13 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+async function contentHashOf(imageId: string): Promise<string> {
+  const row = await env.KB_DB.prepare("SELECT content_hash FROM images WHERE id = ?")
+    .bind(imageId)
+    .first<{ content_hash: string }>();
+  return row!.content_hash;
+}
+
 describe("POST /v1/kb/images + GET /v1/kb/images/:id", () => {
   it("round-trips image bytes and content-type", async () => {
     const pageId = await seedPage();
@@ -62,8 +69,111 @@ describe("POST /v1/kb/images + GET /v1/kb/images/:id", () => {
     const get = await call(`/v1/kb/images/${json.imageId}`);
     expect(get.status).toBe(200);
     expect(get.headers.get("Content-Type")).toBe("image/png");
+    // Stored-XSS hardening headers (defence in depth).
+    expect(get.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(get.headers.get("Content-Security-Policy")).toBe("default-src 'none'");
+    expect(get.headers.get("Content-Disposition")).toBe("inline");
     const got = new Uint8Array(await get.arrayBuffer());
     expect(got).toEqual(bytes);
+  });
+
+  it("is an idempotent no-op when re-uploading identical bytes (200, no R2 rewrite)", async () => {
+    const pageId = await seedPage();
+    const bytes = new Uint8Array([0x47, 0x49, 0x46, 0x38]); // GIF magic
+    const reqBody = {
+      pageId,
+      url: "https://bg3.wiki/img/noop.gif",
+      contentBase64: bytesToBase64(bytes),
+      contentType: "image/gif",
+    };
+
+    const first = await call("/v1/kb/images", { method: "POST", headers: AUTH, jsonBody: reqBody });
+    expect(first.status).toBe(201);
+    const firstJson: { imageId: string } = await first.json();
+    const key = `images/${firstJson.imageId}.bin`;
+
+    // Capture the R2 upload marker after the first store.
+    const headBefore = await env.KB_BUCKET.head(key);
+    const uploadedBefore = headBefore!.uploaded.getTime();
+
+    const second = await call("/v1/kb/images", {
+      method: "POST",
+      headers: AUTH,
+      jsonBody: reqBody,
+    });
+    expect(second.status).toBe(200); // existing + identical hash → 200, not 201
+    const secondJson: { imageId: string } = await second.json();
+    expect(secondJson.imageId).toBe(firstJson.imageId);
+
+    // R2 blob was NOT rewritten on the idempotent re-upload.
+    const headAfter = await env.KB_BUCKET.head(key);
+    expect(headAfter!.uploaded.getTime()).toBe(uploadedBefore);
+  });
+
+  it("supersedes in place when bytes change (same imageId, new hash, R2 overwritten)", async () => {
+    const pageId = await seedPage();
+    const url = "https://bg3.wiki/img/change.png";
+    const first = await call("/v1/kb/images", {
+      method: "POST",
+      headers: AUTH,
+      jsonBody: {
+        pageId,
+        url,
+        contentBase64: bytesToBase64(new Uint8Array([1, 1, 1])),
+        contentType: "image/png",
+      },
+    });
+    expect(first.status).toBe(201);
+    const firstJson: { imageId: string } = await first.json();
+    const key = `images/${firstJson.imageId}.bin`;
+    const hashBefore = await contentHashOf(firstJson.imageId);
+
+    const headBefore = await env.KB_BUCKET.head(key);
+    const uploadedBefore = headBefore!.uploaded.getTime();
+
+    const second = await call("/v1/kb/images", {
+      method: "POST",
+      headers: AUTH,
+      jsonBody: {
+        pageId,
+        url,
+        contentBase64: bytesToBase64(new Uint8Array([2, 2, 2, 2])),
+        contentType: "image/png",
+      },
+    });
+    expect(second.status).toBe(200); // existing row → 200, not 201
+    const secondJson: { imageId: string } = await second.json();
+    expect(secondJson.imageId).toBe(firstJson.imageId); // supersede-in-place: same id
+
+    expect(await contentHashOf(firstJson.imageId)).not.toBe(hashBefore);
+
+    // Exactly one row for (page,url) and the R2 blob WAS rewritten.
+    const count = await env.KB_DB.prepare(
+      "SELECT COUNT(*) AS n FROM images WHERE page_id = ? AND url = ?",
+    )
+      .bind(pageId, url)
+      .first<{ n: number }>();
+    expect(count!.n).toBe(1);
+
+    const headAfter = await env.KB_BUCKET.head(key);
+    expect(headAfter!.uploaded.getTime()).not.toBe(uploadedBefore);
+  });
+
+  it("returns 400 validation_failed for a disallowed contentType (stored-XSS guard)", async () => {
+    const pageId = await seedPage();
+    const res = await call("/v1/kb/images", {
+      method: "POST",
+      headers: AUTH,
+      jsonBody: {
+        pageId,
+        url: "https://bg3.wiki/img/evil.html",
+        contentBase64: bytesToBase64(new Uint8Array([0x3c, 0x73, 0x76, 0x67])),
+        contentType: "text/html",
+      },
+    });
+    expect(res.status).toBe(400);
+    const body: ErrorBody = await res.json();
+    expect(body.error).toBe("validation_failed");
   });
 
   it("returns 404 when the page is unknown", async () => {
@@ -169,5 +279,9 @@ describe("POST /v1/kb/images + GET /v1/kb/images/:id", () => {
     const get = await call("/v1/kb/images/img-oct");
     expect(get.status).toBe(200);
     expect(get.headers.get("Content-Type")).toBe("application/octet-stream");
+    // Hardening headers are present even on the octet-stream fallback path.
+    expect(get.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(get.headers.get("Content-Security-Policy")).toBe("default-src 'none'");
+    expect(get.headers.get("Content-Disposition")).toBe("inline");
   });
 });
