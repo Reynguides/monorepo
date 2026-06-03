@@ -3,6 +3,19 @@
 Phase 11 is the final phase of the productionization plan — every item
 in this list is **post-productionization** work.
 
+## PoC 2 — RAG infrastructure (in progress)
+
+A Cloudflare-hosted RAG knowledge base for a BG3 wiki, built as a new
+isolated worker `apps/reyn-rag-worker` (D1 + R2 + Vectorize + Workers AI,
+with OpenRouter generation via AI Gateway). It crawls BG3 wiki sources,
+stores raw + cleaned content and images, embeds and indexes them, and
+serves a retrieval-augmented query/answer API with source citations. The
+consuming "universal game wiki" website is **out of scope**. Decisions are
+captured in ADRs 0011–0016; the worker mirrors `reyn-cloud-worker`'s
+conventions and 95% coverage gate. OpenRouter is opt-in (`LLM_PROVIDER=mock`
+by default) so the bulk of the work builds and tests with zero external
+credits. Tracked on branch `feat/poc2-rag-infra`.
+
 ## Near-term (1–2 sessions)
 
 - **Catalog codegen** — replace the three-way hand-mirror (TS + C# +
