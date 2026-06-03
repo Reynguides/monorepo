@@ -192,7 +192,23 @@
         "standardise",
         "standardised",
         "localise",
-        "localised"
+        "localised",
+        "Astarion",
+        "synthesised",
+        "stmts",
+        "funcs",
+        "upserts",
+        "upserted",
+        "upsert",
+        "cosine",
+        "ShareAlike",
+        "WotC",
+        "Hono",
+        "OpenAI",
+        "chunking",
+        "chunker",
+        "topK",
+        "reindexed"
     ],
     "allowCompoundWords": true
 }

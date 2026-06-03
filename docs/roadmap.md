@@ -3,7 +3,7 @@
 Phase 11 is the final phase of the productionization plan — every item
 in this list is **post-productionization** work.
 
-## PoC 2 — RAG infrastructure (in progress)
+## PoC 2 — RAG infrastructure (implemented)
 
 A Cloudflare-hosted RAG knowledge base for a BG3 wiki, built as a new
 isolated worker `apps/reyn-rag-worker` (D1 + R2 + Vectorize + Workers AI,
@@ -14,7 +14,28 @@ consuming "universal game wiki" website is **out of scope**. Decisions are
 captured in ADRs 0011–0016; the worker mirrors `reyn-cloud-worker`'s
 conventions and 95% coverage gate. OpenRouter is opt-in (`LLM_PROVIDER=mock`
 by default) so the bulk of the work builds and tests with zero external
-credits. Tracked on branch `feat/poc2-rag-infra`.
+credits. All phases (0–7) are implemented on branch `feat/poc2-rag-infra`.
+
+**PoC 2 follow-up items:**
+
+- **Query endpoint rate limiting** — `POST /v1/rag/query` has no rate
+  limiting in this release. Add a Cloudflare WAF rate-limit rule before
+  any public exposure to prevent cost and DoS exposure on the live
+  OpenRouter path (see `docs/rag/operations.md#known-limitations`).
+- **Productization licensing rework** — the current corpus includes
+  Fextralife (ToS violation risk, owner-accepted for the PoC). Before
+  any public deployment, supersede [[ADR-0015]]: drop Fextralife,
+  restrict to bg3.wiki CC-BY-SA (post-2024-07-20) with ShareAlike
+  compliance, and treat community guides as cite-by-link only.
+- **Embedding model comparison runs** — Vectorize dimensions are fixed at
+  creation, so each candidate model needs its own index. Compare
+  `@cf/baai/bge-base-en-v1.5` (768-dim, current default) against BGE
+  small/large/`bge-m3` and optionally OpenAI `text-embedding-3-small`
+  (1536-dim, via AI Gateway). Record results in `docs/rag/tuning.md`.
+- **BG3SE-style live verification** — the crawler runs manually against
+  the live wiki; add a scheduled Cloudflare Cron Trigger (or a GitHub
+  Actions schedule) to refresh the corpus on a regular cadence and post
+  a verification summary.
 
 ## Near-term (1–2 sessions)
 
