@@ -1,0 +1,45 @@
+name = "reyn-rag-worker"
+main = "src/index.ts"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Knowledge-base D1: crawl/page/chunk/embedding bookkeeping for the RAG pipeline.
+[[d1_databases]]
+binding = "KB_DB"
+database_name = "reyn_kb"
+migrations_dir = "../../migrations/kb-d1"
+# TODO: create reyn_kb in the active Cloudflare account during Phase 7 deploy; placeholder for local/test.
+database_id = "00000000-0000-0000-0000-000000000000"
+
+# R2 object store for raw crawled HTML, normalised markdown, and images.
+[[r2_buckets]]
+binding = "KB_BUCKET"
+bucket_name = "reyn-kb-content"
+
+# Vectorize index for chunk embeddings (bge-base-en-v1.5 → 768 dims).
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "reyn-kb-bge-base"
+
+# Workers AI binding — used for embeddings under EMBEDDING_PROVIDER=workers-ai.
+[ai]
+binding = "AI"
+
+[vars]
+# Provider selector vars. The "mock" values are the safe defaults for local dev
+# and CI (Vectorize + Workers AI have no local emulator). Override per-environment
+# with `wrangler deploy --env <name>` to switch to live providers.
+EMBEDDING_PROVIDER = "workers-ai"
+VECTOR_INDEX = "vectorize"
+OBJECT_STORE = "r2"
+LLM_PROVIDER = "mock"
+
+# AI Gateway placeholders for the OpenRouter LLM path (opt-in live only).
+# Filled in during Phase 7 deploy; empty strings keep the mock path the default.
+AI_GATEWAY_ACCOUNT_ID = ""
+AI_GATEWAY_NAME = ""
+OPENROUTER_MODEL = ""
+
+# Required secrets (set with `wrangler secret put <NAME>`):
+# - OPENROUTER_API_KEY : OpenRouter API key. Required only when LLM_PROVIDER=openrouter (opt-in live).
+# - KB_INGEST_KEY      : Shared secret authorising ingestion requests into the KB pipeline.
