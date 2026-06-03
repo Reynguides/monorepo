@@ -101,6 +101,16 @@ export const PageListQuery = z.object({
 
 export type PageListQuery = z.infer<typeof PageListQuery>;
 
+/** Response for POST /v1/kb/pages/:id/index. */
+export const IndexPageResponse = z.object({
+  pageId: z.string(),
+  chunks: z.number(),
+  /** True when the page already had chunks (this call rebuilt them). */
+  reindexed: z.boolean(),
+});
+
+export type IndexPageResponse = z.infer<typeof IndexPageResponse>;
+
 export const VerifyResponse = z.object({
   pages: z.object({
     total: z.number(),
@@ -109,6 +119,13 @@ export const VerifyResponse = z.object({
   images: z.object({
     total: z.number(),
     missingR2: z.array(z.string()),
+  }),
+  chunks: z.object({
+    total: z.number(),
+    /** Chunk ids with no embedding_state ledger row for the active model. */
+    missingEmbedding: z.array(z.string()),
+    /** Recorded vector ids that don't resolve in the vector index. */
+    missingVector: z.array(z.string()),
   }),
 });
 

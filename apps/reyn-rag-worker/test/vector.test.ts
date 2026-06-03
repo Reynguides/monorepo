@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { createVectorIndexClient } from "../src/vector/factory.ts";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createVectorIndexClient, resetMockVectorIndexClient } from "../src/vector/factory.ts";
 import { MockVectorIndexClient } from "../src/vector/MockVectorIndexClient.ts";
 import { VectorizeIndexClient, type VectorizeBinding } from "../src/vector/VectorizeIndexClient.ts";
 import { VectorIndexError } from "../src/vector/types.ts";
@@ -17,10 +17,24 @@ function baseEnv(overrides: Partial<Env>): Env {
 }
 
 describe("createVectorIndexClient", () => {
+  afterEach(() => {
+    resetMockVectorIndexClient();
+  });
+
   it("returns the mock client in mock mode", () => {
     expect(createVectorIndexClient(baseEnv({ VECTOR_INDEX: "mock" }))).toBeInstanceOf(
       MockVectorIndexClient,
     );
+  });
+
+  it("returns the SAME mock singleton across calls until reset", () => {
+    const env = baseEnv({ VECTOR_INDEX: "mock" });
+    const a = createVectorIndexClient(env);
+    const b = createVectorIndexClient(env);
+    expect(a).toBe(b);
+    resetMockVectorIndexClient();
+    const c = createVectorIndexClient(env);
+    expect(c).not.toBe(a);
   });
 
   it("returns the vectorize client when VECTORIZE is bound", () => {

@@ -1,14 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { env } from "cloudflare:test";
 import "./helpers/setup.ts";
 import { call } from "./helpers/client.ts";
+import { resetMockVectorIndexClient } from "../src/vector/factory.ts";
 
 const AUTH = { Authorization: "Bearer test-ingest-key" };
 
 interface VerifyBody {
   pages: { total: number; missingR2: string[] };
   images: { total: number; missingR2: string[] };
+  chunks: { total: number; missingEmbedding: string[]; missingVector: string[] };
 }
+
+beforeEach(() => {
+  resetMockVectorIndexClient();
+});
 
 async function seed(): Promise<{
   pageId: string;
@@ -56,6 +62,29 @@ async function seed(): Promise<{
     rawKey: `pages/${pageId}/raw.html`,
     imgKey: `images/${imageId}.bin`,
   };
+}
+
+/** Seeds + indexes a page with enough body to yield multiple chunks. */
+async function seedAndIndex(): Promise<string> {
+  const src = await call("/v1/kb/sources", {
+    method: "POST",
+    headers: AUTH,
+    jsonBody: { name: "Indexed Source", baseUrl: "https://bg3.wiki", tier: 1 },
+  });
+  const srcJson: { sourceId: string } = await src.json();
+  const html = "<h1>Doc</h1><p>" + "Sentence about a companion. ".repeat(80) + "</p>";
+  const page = await call("/v1/kb/pages", {
+    method: "POST",
+    headers: AUTH,
+    jsonBody: { sourceId: srcJson.sourceId, url: "https://bg3.wiki/Indexed", html },
+  });
+  const pageJson: { pageId: string } = await page.json();
+  const idx = await call(`/v1/kb/pages/${pageJson.pageId}/index`, {
+    method: "POST",
+    headers: AUTH,
+  });
+  expect(idx.status).toBe(200);
+  return pageJson.pageId;
 }
 
 describe("GET /v1/kb/verify", () => {
@@ -106,5 +135,46 @@ describe("GET /v1/kb/verify", () => {
     const res = await call("/v1/kb/verify");
     const body: VerifyBody = await res.json();
     expect(body.pages.missingR2).toContain("page-null-raw");
+  });
+
+  it("reports zero chunk/vector drift right after indexing a page", async () => {
+    const pageId = await seedAndIndex();
+    const res = await call("/v1/kb/verify");
+    const body: VerifyBody = await res.json();
+    expect(body.chunks.total).toBeGreaterThan(1);
+    expect(body.chunks.missingEmbedding).toEqual([]);
+    expect(body.chunks.missingVector).toEqual([]);
+    // Sanity: the indexed page's chunks contribute to the total.
+    const count = await env.KB_DB.prepare("SELECT COUNT(*) AS n FROM chunks WHERE page_id = ?")
+      .bind(pageId)
+      .first<{ n: number }>();
+    expect(count!.n).toBeGreaterThan(1);
+  });
+
+  it("reports missingEmbedding when an embedding_state row is deleted out-of-band", async () => {
+    const pageId = await seedAndIndex();
+    // Delete one ledger row, leaving its chunk row → that chunk lacks an embedding.
+    const chunk = await env.KB_DB.prepare(
+      "SELECT id FROM chunks WHERE page_id = ? ORDER BY ord LIMIT 1",
+    )
+      .bind(pageId)
+      .first<{ id: string }>();
+    await env.KB_DB.prepare("DELETE FROM embedding_state WHERE chunk_id = ?").bind(chunk!.id).run();
+
+    const res = await call("/v1/kb/verify");
+    const body: VerifyBody = await res.json();
+    expect(body.chunks.missingEmbedding).toContain(chunk!.id);
+  });
+
+  it("reports missingVector when a recorded vector vanishes from the index", async () => {
+    const pageId = await seedAndIndex();
+    // Reset the singleton mock vector index AFTER indexing → the ledger still
+    // references vector ids that no longer resolve in the (now empty) index.
+    resetMockVectorIndexClient();
+
+    const res = await call("/v1/kb/verify");
+    const body: VerifyBody = await res.json();
+    expect(body.chunks.missingVector.length).toBeGreaterThan(0);
+    expect(body.chunks.missingVector).toContain(`${pageId}:0`);
   });
 });

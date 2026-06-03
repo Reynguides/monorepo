@@ -94,6 +94,22 @@ export async function upsertPageByUrl(
   return existing.id;
 }
 
+/**
+ * Sets a page's normalised-markdown R2 key (the `clean.md` blob produced by the
+ * index handler) and bumps `updated_at`. Leaves all other columns untouched.
+ */
+export async function setPageMdKey(
+  db: D1Database,
+  pageId: string,
+  r2MdKey: string,
+  nowMs: number,
+): Promise<void> {
+  await db
+    .prepare("UPDATE pages SET r2_md_key = ?, updated_at = ? WHERE id = ?")
+    .bind(r2MdKey, nowMs, pageId)
+    .run();
+}
+
 export interface PageListResult {
   items: PageRow[];
   nextCursor: string | null;

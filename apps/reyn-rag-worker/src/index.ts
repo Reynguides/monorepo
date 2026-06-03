@@ -6,6 +6,7 @@ import { storeSourceHandler } from "./handlers/kb/sources.ts";
 import { storePageHandler } from "./handlers/kb/pages-write.ts";
 import { storeImageHandler } from "./handlers/kb/images-write.ts";
 import { getPageHandler, listPagesHandler } from "./handlers/kb/pages-read.ts";
+import { indexPageHandler } from "./handlers/kb/index-page.ts";
 import { getImageHandler } from "./handlers/kb/images-read.ts";
 import { verifyHandler } from "./handlers/kb/verify.ts";
 import { getCrawlStateHandler, upsertCrawlStateHandler } from "./handlers/kb/crawl-state.ts";
@@ -18,6 +19,7 @@ app.get("/v1/health", healthHandler);
 app.post("/v1/kb/sources", requireIngestKey, storeSourceHandler);
 app.post("/v1/kb/pages", requireIngestKey, storePageHandler);
 app.post("/v1/kb/images", requireIngestKey, storeImageHandler);
+app.post("/v1/kb/pages/:id/index", requireIngestKey, indexPageHandler);
 app.post("/v1/kb/crawl-state", requireIngestKey, upsertCrawlStateHandler);
 
 // KB reads — open (ADR-0014).
