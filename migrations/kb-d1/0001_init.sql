@@ -6,6 +6,11 @@
 --
 -- Conventions (mirrors migrations/user-d1): snake_case columns, TEXT uuid PKs,
 -- INTEGER epoch-ms timestamps, IF NOT EXISTS, UNIQUE indexes for dedup.
+--
+-- NOTE: Foreign-key relationships (pages.source_id→sources, images.page_id→pages,
+-- chunks.page_id→pages, embedding_state.chunk_id→chunks) are NOT enforced at the
+-- database level. D1's SQLite does not enable PRAGMA foreign_keys by default and
+-- the application layer is the integrity boundary (mirrors the sibling migrations).
 
 -- A crawl source (a documentation site / wiki). Tier ranks authoritativeness.
 CREATE TABLE IF NOT EXISTS sources (

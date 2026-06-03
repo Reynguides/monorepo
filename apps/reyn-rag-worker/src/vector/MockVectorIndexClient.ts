@@ -60,6 +60,10 @@ function cosine(a: number[], b: number[]): number {
   const len = Math.min(a.length, b.length);
   // Iterate the shared prefix via entries() so element access is statically
   // known-defined (no indexed-access fallback / unreachable guard branch).
+  // Asymmetric length cases: when the query vector is longer than the stored
+  // vector, OR when the stored vector is longer than the query, the extra
+  // trailing dimensions are ignored and cosine is computed over the shared
+  // prefix only.
   for (const [i, av] of a.slice(0, len).entries()) {
     const bv = b[i]!;
     dot += av * bv;

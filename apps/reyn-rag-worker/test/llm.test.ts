@@ -49,6 +49,16 @@ describe("createLlmProvider", () => {
     const { AI_GATEWAY_NAME: _omit, ...rest } = openrouterEnv;
     expect(() => createLlmProvider(baseEnv(rest))).toThrow(LlmError);
   });
+
+  it("throws when openrouter is selected without the gateway account id", () => {
+    const { AI_GATEWAY_ACCOUNT_ID: _omit, ...rest } = openrouterEnv;
+    expect(() => createLlmProvider(baseEnv(rest))).toThrow(LlmError);
+  });
+
+  it("throws when openrouter is selected without the model", () => {
+    const { OPENROUTER_MODEL: _omit, ...rest } = openrouterEnv;
+    expect(() => createLlmProvider(baseEnv(rest))).toThrow(LlmError);
+  });
 });
 
 describe("MockLlmProvider", () => {

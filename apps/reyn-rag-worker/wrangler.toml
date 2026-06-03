@@ -26,9 +26,11 @@ index_name = "reyn-kb-bge-base"
 binding = "AI"
 
 [vars]
-# Provider selector vars. The "mock" values are the safe defaults for local dev
-# and CI (Vectorize + Workers AI have no local emulator). Override per-environment
-# with `wrangler deploy --env <name>` to switch to live providers.
+# Provider selector vars. EMBEDDING_PROVIDER, VECTOR_INDEX, and OBJECT_STORE select
+# LIVE Cloudflare infrastructure (Workers AI, Vectorize, R2) — these are production
+# values, not local-dev defaults. LLM_PROVIDER="mock" stays mock per ADR-0013.
+# The vitest config overrides all four selectors to "mock" for tests so no live
+# bindings are required in CI. Deploy is workflow_dispatch-only per ADR-0010.
 EMBEDDING_PROVIDER = "workers-ai"
 VECTOR_INDEX = "vectorize"
 OBJECT_STORE = "r2"

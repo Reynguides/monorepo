@@ -71,6 +71,21 @@ describe("MockVectorIndexClient", () => {
     expect(matches[0]!.score).toBeCloseTo(1, 5);
   });
 
+  it("computes a valid cosine score when stored vector is longer than query", async () => {
+    const c = new MockVectorIndexClient();
+    // Stored vector has 4 dims; query has only 2. Cosine over the shared prefix
+    // [1, 0] should still yield a perfect score (both point the same direction).
+    await c.upsert([
+      { id: "long-stored", values: [1, 0, 5, 5] },
+      { id: "other", values: [0, 1, 0, 0] },
+    ]);
+    const matches = await c.query([1, 0], { topK: 2 });
+    expect(matches[0]!.id).toBe("long-stored");
+    expect(matches[0]!.score).toBeCloseTo(1, 5);
+    expect(matches[1]!.id).toBe("other");
+    expect(matches[1]!.score).toBeCloseTo(0, 5);
+  });
+
   it("upsert replaces an existing id", async () => {
     const c = new MockVectorIndexClient();
     await c.upsert([{ id: "x", values: [1, 0] }]);
