@@ -19,9 +19,7 @@ function makeStubBucket(): R2BucketBinding {
       return Promise.resolve({
         text: () => Promise.resolve(typeof v === "string" ? v : new TextDecoder().decode(v)),
         arrayBuffer: () =>
-          Promise.resolve(
-            typeof v === "string" ? (new TextEncoder().encode(v).buffer as ArrayBuffer) : v,
-          ),
+          Promise.resolve(typeof v === "string" ? new TextEncoder().encode(v).buffer : v),
         ...(e.contentType !== undefined ? { httpMetadata: { contentType: e.contentType } } : {}),
       });
     },
@@ -48,7 +46,7 @@ describe("R2ObjectStore (injected stub bucket)", () => {
     const store = new R2ObjectStore(makeStubBucket());
     expect(await store.get("missing")).toBeNull();
     expect(await store.getBytes("missing")).toBeNull();
-    await store.put("raw", new TextEncoder().encode("x").buffer as ArrayBuffer);
+    await store.put("raw", new TextEncoder().encode("x").buffer);
     expect((await store.getBytes("raw"))!.contentType).toBeNull();
   });
 });

@@ -18,10 +18,24 @@ export async function sha256HexBytes(buf: ArrayBuffer): Promise<string> {
 }
 
 async function hexDigest(data: ArrayBuffer | Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", data);
+  const digest = await crypto.subtle.digest("SHA-256", toArrayBuffer(data));
   let out = "";
   for (const b of new Uint8Array(digest)) {
     out += b.toString(16).padStart(2, "0");
   }
   return out;
+}
+
+/**
+ * Normalize to a concrete `ArrayBuffer` so the digest argument is unambiguously a
+ * `BufferSource`. Under current `@types/node`, `Uint8Array` is generic over
+ * `ArrayBufferLike` (which includes `SharedArrayBuffer`) and no longer assigns to the
+ * Workers `BufferSource` (an `ArrayBuffer`-backed view) — a one-copy normalize avoids
+ * a cast and is version-robust.
+ */
+function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
+  if (data instanceof ArrayBuffer) return data;
+  const buffer = new ArrayBuffer(data.byteLength);
+  new Uint8Array(buffer).set(data);
+  return buffer;
 }

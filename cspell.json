@@ -177,7 +177,15 @@
         "upserts",
         "upserted",
         "reranker",
-        "rerank"
+        "rerank",
+        "Crawlee",
+        "crawlee",
+        "Apify",
+        "Cheerio",
+        "cheerio",
+        "jsdom",
+        "Playwright",
+        "deduped"
     ],
     "allowCompoundWords": true
 }

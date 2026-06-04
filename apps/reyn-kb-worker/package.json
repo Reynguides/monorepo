@@ -11,7 +11,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "crawl": "tsx tools/crawl.ts"
   },
   "dependencies": {
     "hono": "^4.6.20",
@@ -19,6 +20,8 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.8.0",
+    "crawlee": "^3.12.0",
+    "tsx": "^4.19.2",
     "@cloudflare/workers-types": "^4.20250129.0",
     "@types/node": "^20.17.0",
     "@vitest/coverage-istanbul": "2.1.9",

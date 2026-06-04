@@ -1,0 +1,105 @@
+/**
+ * BG3 knowledge-source catalog + pure mapping helpers. `tier` feeds ranking +
+ * conflict resolution (1 = most authoritative). This module is imported by BOTH
+ * the Worker-side handlers (only the types/data) and the Node-side Crawlee tool
+ * (`tools/crawl.ts`); it stays dependency-free so it never drags the crawler into
+ * the Worker bundle (ADR-0024).
+ */
+import type { StorePageRequest, StoreSourceRequest } from "../schemas/kb.ts";
+
+export interface SourceDef {
+  id: string;
+  name: string;
+  baseUrl: string;
+  sitemapUrl: string;
+  tier: number;
+  license: string;
+  /** Crawl only URLs whose path starts with one of these prefixes (empty = all). */
+  allowPathPrefixes: readonly string[];
+  /** Page type assigned to ingested pages (rules refine it downstream). */
+  defaultPageType: NonNullable<StorePageRequest["pageType"]>;
+}
+
+/** MediaWiki namespaces that are never article content (meta/discussion/files). */
+const EXCLUDED_NAMESPACE_PREFIXES = [
+  "Special:",
+  "Talk:",
+  "User:",
+  "User_talk:",
+  "File:",
+  "File_talk:",
+  "Category:",
+  "Category_talk:",
+  "Template:",
+  "Template_talk:",
+  "Help:",
+  "MediaWiki:",
+  "Module:",
+  "Property:",
+];
+
+export const SOURCE_CATALOG: readonly SourceDef[] = [
+  {
+    id: "bg3-wiki",
+    name: "BG3 Wiki",
+    baseUrl: "https://bg3.wiki",
+    sitemapUrl: "https://bg3.wiki/sitemap.xml",
+    tier: 1,
+    license: "CC BY-SA 4.0",
+    allowPathPrefixes: ["/wiki/"],
+    defaultPageType: "article",
+  },
+];
+
+export function getSource(id: string): SourceDef | undefined {
+  return SOURCE_CATALOG.find((s) => s.id === id);
+}
+
+function sameOrigin(url: URL, baseUrl: string): boolean {
+  try {
+    return url.origin === new URL(baseUrl).origin;
+  } catch {
+    return false;
+  }
+}
+
+function isExcludedNamespace(pathname: string, prefixes: readonly string[]): boolean {
+  const onPrefix = prefixes.find((p) => pathname.startsWith(p)) ?? "";
+  const title = pathname.slice(onPrefix.length);
+  return EXCLUDED_NAMESPACE_PREFIXES.some((ns) => title.startsWith(ns));
+}
+
+/**
+ * True if `url` is a real content page of `source`: same origin, on an allowed path
+ * prefix, and not a MediaWiki meta/namespace page. Pure — drives the crawl filter.
+ */
+export function shouldIngest(url: string, source: SourceDef): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (!sameOrigin(parsed, source.baseUrl)) return false;
+  const prefixes = source.allowPathPrefixes;
+  const onAllowedPath =
+    prefixes.length === 0 || prefixes.some((p) => parsed.pathname.startsWith(p));
+  if (!onAllowedPath) return false;
+  return !isExcludedNamespace(parsed.pathname, prefixes);
+}
+
+/** Source-registration body for `POST /v1/kb/sources` (idempotent). */
+export function toSourceRegistration(source: SourceDef): StoreSourceRequest {
+  return {
+    id: source.id,
+    name: source.name,
+    baseUrl: source.baseUrl,
+    tier: source.tier,
+    license: source.license,
+  };
+}
+
+/** Page-ingest body for `POST /v1/kb/pages`. */
+export function toPageRequest(source: SourceDef, url: string, html: string): StorePageRequest {
+  return { sourceId: source.id, url, html, pageType: source.defaultPageType };
+}
