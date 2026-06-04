@@ -87,3 +87,28 @@ export async function listChunkIdsLackingEmbedding(
     .all<{ id: string }>();
   return rows.results.map((r) => r.id);
 }
+
+/** Ledger rows whose chunk no longer exists (deleted chunk, stale vector) — drift (P8). */
+export async function listOrphanEmbeddingChunkIds(db: D1Database): Promise<string[]> {
+  const rows = await db
+    .prepare(
+      `SELECT es.chunk_id AS id FROM embedding_state es
+       LEFT JOIN chunks c ON c.id = es.chunk_id
+       WHERE c.id IS NULL`,
+    )
+    .all<{ id: string }>();
+  return rows.results.map((r) => r.id);
+}
+
+/** Ledger rows whose recorded namespace no longer matches the chunk's page type — drift (P8). */
+export async function listNamespaceDriftChunkIds(db: D1Database): Promise<string[]> {
+  const rows = await db
+    .prepare(
+      `SELECT es.chunk_id AS id FROM embedding_state es
+       JOIN chunks c ON c.id = es.chunk_id
+       JOIN pages p ON p.id = c.page_id
+       WHERE COALESCE(es.namespace, '') != p.page_type`,
+    )
+    .all<{ id: string }>();
+  return rows.results.map((r) => r.id);
+}

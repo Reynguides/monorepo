@@ -25,6 +25,7 @@ import type { IVectorIndexClient, VectorRecord } from "../../vector/types.ts";
 import { extractContent, type ExtractedContent } from "../../lib/extract.ts";
 import { chunkBlocks, type Chunk } from "../../lib/chunking.ts";
 import { approxTokenCount } from "../../lib/tokens.ts";
+import { logEvent } from "../../lib/log.ts";
 import { buildPageRelationships } from "./build-relationships.ts";
 
 const CHUNK_MAX_CHARS = 1200;
@@ -199,5 +200,11 @@ export const indexPageHandler: Handler<{ Bindings: Env }> = async (c) => {
     await persistChunks(c, vector, inputs, chunks);
   }
   await buildPageRelationships(db, page, inputs.sourceTier, extracted);
+  logEvent("info", "kb.index", {
+    pageId: page.id,
+    chunks: chunks.length,
+    sections: extracted.sections.length,
+    reindexed: removed > 0,
+  });
   return c.json({ pageId: page.id, chunks: chunks.length, reindexed: removed > 0 }, 200);
 };
