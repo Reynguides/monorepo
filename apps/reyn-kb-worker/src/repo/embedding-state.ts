@@ -1,0 +1,89 @@
+/** D1 wrapper for `embedding_state` — the authoritative chunk -> vector ledger. */
+
+export interface EmbeddingStateRow {
+  chunk_id: string;
+  model: string;
+  vector_id: string;
+  namespace: string | null;
+  indexed_at: number;
+}
+
+export interface EmbeddingStateInput {
+  chunkId: string;
+  model: string;
+  vectorId: string;
+  namespace?: string | null;
+  indexedAt: number;
+}
+
+export async function insertEmbeddingState(
+  db: D1Database,
+  rows: readonly EmbeddingStateInput[],
+): Promise<void> {
+  if (rows.length === 0) return;
+  const statements = rows.map((r) =>
+    db
+      .prepare(
+        `INSERT INTO embedding_state (chunk_id, model, vector_id, namespace, indexed_at)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(chunk_id, model) DO UPDATE SET
+           vector_id = excluded.vector_id, namespace = excluded.namespace,
+           indexed_at = excluded.indexed_at`,
+      )
+      .bind(r.chunkId, r.model, r.vectorId, r.namespace ?? null, r.indexedAt),
+  );
+  await db.batch(statements);
+}
+
+/** Vector ids backing a page's chunks (for supersede deleteByIds). */
+export async function listVectorIdsByPageId(db: D1Database, pageId: string): Promise<string[]> {
+  const rows = await db
+    .prepare(
+      `SELECT es.vector_id AS vector_id FROM embedding_state es
+       JOIN chunks c ON c.id = es.chunk_id WHERE c.page_id = ?`,
+    )
+    .bind(pageId)
+    .all<{ vector_id: string }>();
+  return rows.results.map((r) => r.vector_id);
+}
+
+export async function deleteEmbeddingStateByChunkIds(
+  db: D1Database,
+  chunkIds: readonly string[],
+): Promise<void> {
+  if (chunkIds.length === 0) return;
+  const placeholders = chunkIds.map(() => "?").join(", ");
+  await db
+    .prepare(`DELETE FROM embedding_state WHERE chunk_id IN (${placeholders})`)
+    .bind(...chunkIds)
+    .run();
+}
+
+export async function getEmbeddingStateByChunkIds(
+  db: D1Database,
+  chunkIds: readonly string[],
+): Promise<EmbeddingStateRow[]> {
+  if (chunkIds.length === 0) return [];
+  const placeholders = chunkIds.map(() => "?").join(", ");
+  const rows = await db
+    .prepare(`SELECT * FROM embedding_state WHERE chunk_id IN (${placeholders})`)
+    .bind(...chunkIds)
+    .all<EmbeddingStateRow>();
+  return rows.results;
+}
+
+/** Chunk ids lacking an embedding row for `model` (drift) — used by verify (P8). */
+export async function listChunkIdsLackingEmbedding(
+  db: D1Database,
+  model: string,
+): Promise<string[]> {
+  const rows = await db
+    .prepare(
+      `SELECT c.id AS id FROM chunks c
+       LEFT JOIN embedding_state es ON es.chunk_id = c.id AND es.model = ?
+       WHERE es.chunk_id IS NULL`,
+    )
+    .bind(model)
+    .all<{ id: string }>();
+  return rows.results.map((r) => r.id);
+}
