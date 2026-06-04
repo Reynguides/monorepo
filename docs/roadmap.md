@@ -3,6 +3,24 @@
 Phase 11 is the final phase of the productionization plan — every item
 in this list is **post-productionization** work.
 
+## Knowledge Base (`apps/reyn-kb-worker`)
+
+The BG3 Knowledge Base — a structured KB engine with a typed relationship
+graph, an explicit rules layer, and hybrid (semantic + keyword + filtered +
+relationship-aware) search — was built on the `feat/knowledge-base` branch
+(ADRs 0017–0024, docs at `docs/kb/`). It deliberately stops at **retrieval**;
+LLM answer generation is out of scope. Follow-ups:
+
+- **Answer layer (RAG)** — a *consumer* of `POST /v1/kb/search`, not part of
+  this worker. The search response is already the citation-ready contract.
+- **More sources** — extend `SOURCE_CATALOG` (`src/lib/sources.ts`) beyond
+  `bg3-wiki`; a JS-rendered source needs Crawlee's `PlaywrightCrawler`.
+- **Richer `page_type` classification** — the crawler ingests everything as
+  `article`; a per-source classifier (or a normalize rule) could set finer
+  types pre-index.
+- **Scheduled re-crawl + freshness** — a cron-triggered crawl so `crawled_at`
+  /freshness decay reflects live wiki edits.
+
 ## Near-term (1–2 sessions)
 
 - **Catalog codegen** — replace the three-way hand-mirror (TS + C# +

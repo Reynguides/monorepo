@@ -1,0 +1,94 @@
+name: Deploy KB Worker
+
+# Manual-only per ADR-0010: deployed via `workflow_dispatch` from the GitHub UI,
+# never on a push. The KB Worker talks to live Vectorize + Workers AI, so the
+# bootstrap (Vectorize index + metadata indexes) must exist BEFORE first ingest —
+# Vectorize metadata indexes are NOT retroactive (ADR-0022).
+#
+# One-time bootstrap prerequisite (see docs/kb/operations.md), done once by hand
+# because it is destructive/account-shaping:
+#   - create the D1 database `reyn_kb` and paste its id into wrangler.toml
+#   - create the R2 bucket `reyn-kb-content`
+# This workflow then handles the repeatable parts: migrations, the Vectorize index
+# + its 6 metadata indexes (idempotent — `|| true` swallows "already exists"),
+# the KB_INGEST_KEY secret, and `wrangler deploy`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment environment
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-kb-worker-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Bootstrap + migrate + deploy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/reyn-kb-worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        working-directory: .
+
+      - name: Apply KB D1 migrations
+        # Idempotent: wrangler tracks applied migrations and skips ones already
+        # recorded in d1_migrations.
+        run: pnpm exec wrangler d1 migrations apply reyn_kb --remote
+
+      - name: Create Vectorize index (idempotent)
+        # bge-base-en-v1.5 -> 768 dims, cosine. `|| true` so a re-run that finds
+        # the index already present does not fail the job.
+        run: pnpm exec wrangler vectorize create reyn-kb-bge-base --dimensions=768 --metric=cosine || true
+
+      - name: Create Vectorize metadata indexes (idempotent, before first ingest)
+        # The 6 filterable fields (ADR-0022), under the 10-index cap. Metadata
+        # indexes are NOT retroactive — they must exist before any vector upsert.
+        run: |
+          pnpm exec wrangler vectorize create-metadata-index reyn-kb-bge-base --property-name=source_tier --type=number || true
+          pnpm exec wrangler vectorize create-metadata-index reyn-kb-bge-base --property-name=page_type --type=string || true
+          pnpm exec wrangler vectorize create-metadata-index reyn-kb-bge-base --property-name=lifecycle --type=string || true
+          pnpm exec wrangler vectorize create-metadata-index reyn-kb-bge-base --property-name=language --type=string || true
+          pnpm exec wrangler vectorize create-metadata-index reyn-kb-bge-base --property-name=source_id --type=string || true
+          pnpm exec wrangler vectorize create-metadata-index reyn-kb-bge-base --property-name=crawled_at --type=number || true
+
+      - name: Push KB_INGEST_KEY secret
+        # Authorises write/ingest requests (ADR-0017). Value from the GitHub
+        # environment secret; never logged.
+        env:
+          KB_INGEST_KEY: ${{ secrets.KB_INGEST_KEY }}
+        run: echo "$KB_INGEST_KEY" | pnpm exec wrangler secret put KB_INGEST_KEY
+
+      - name: Deploy
+        run: pnpm exec wrangler deploy

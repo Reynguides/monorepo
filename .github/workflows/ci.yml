@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, feat/knowledge-base]
   pull_request:
-    branches: [master]
+    branches: [master, feat/knowledge-base]
 
 permissions:
   contents: read
@@ -138,6 +138,60 @@ jobs:
         with:
           name: worker-coverage
           path: apps/reyn-cloud-worker/coverage
+          if-no-files-found: warn
+
+  # ─── KB Worker ─────────────────────────────────────────────────────
+  # Knowledge-base Worker (ADR-0017): same strict gates as `worker`. Vectorize
+  # + Workers AI have no local emulator, so the vitest config pins the provider
+  # selectors to mock/R2 — the suite never touches live Cloudflare. The
+  # Crawlee crawler (`tools/crawl.ts`) is type-checked + linted here but is
+  # coverage-excluded (it needs live network); its pure core is in src/lib.
+  kb-worker:
+    name: KB Worker (typecheck + lint + test:coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/reyn-kb-worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        working-directory: .
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Test (with coverage)
+        # The vitest config enforces 95/95/95/90 thresholds; this step fails
+        # if any threshold is missed.
+        run: pnpm test:coverage
+
+      - name: Upload KB worker coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kb-worker-coverage
+          path: apps/reyn-kb-worker/coverage
           if-no-files-found: warn
 
   # ─── Lua mod ───────────────────────────────────────────────────────
