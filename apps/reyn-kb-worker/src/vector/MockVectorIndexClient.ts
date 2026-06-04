@@ -1,10 +1,28 @@
 import type {
+  FilterCondition,
   IVectorIndexClient,
+  MetadataFilter,
   QueryOptions,
   VectorMatch,
   VectorRecord,
   VectorRef,
 } from "./types.ts";
+
+function matchCondition(actual: unknown, cond: FilterCondition): boolean {
+  if (typeof cond === "object") {
+    if ("$in" in cond) return typeof actual === "string" && cond.$in.includes(actual);
+    if ("$lte" in cond) return typeof actual === "number" && actual <= cond.$lte;
+    return typeof actual === "number" && actual >= cond.$gte;
+  }
+  return actual === cond;
+}
+
+function matchesFilter(meta: Record<string, unknown> | undefined, filter: MetadataFilter): boolean {
+  for (const [key, cond] of Object.entries(filter)) {
+    if (!matchCondition(meta?.[key], cond)) return false;
+  }
+  return true;
+}
 
 /**
  * In-memory vector index for local dev + tests. `query` performs real cosine
@@ -29,6 +47,8 @@ export class MockVectorIndexClient implements IVectorIndexClient {
   public query(vector: number[], opts: QueryOptions): Promise<VectorMatch[]> {
     const scored: VectorMatch[] = [];
     for (const rec of this.store.values()) {
+      if (opts.namespace !== undefined && rec.namespace !== opts.namespace) continue;
+      if (opts.filter !== undefined && !matchesFilter(rec.metadata, opts.filter)) continue;
       scored.push({ id: rec.id, score: cosine(vector, rec.values), ...metaOf(rec) });
     }
     scored.sort((a, b) => b.score - a.score);

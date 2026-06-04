@@ -24,8 +24,23 @@ export interface VectorRef {
   metadata?: Record<string, unknown>;
 }
 
+/** A single metadata filter condition (mirrors the Vectorize operators we use). */
+export type FilterCondition =
+  | string
+  | number
+  | { $in: readonly string[] }
+  | { $lte: number }
+  | { $gte: number };
+
+/** Field → condition map applied to vector metadata at query time. */
+export type MetadataFilter = Record<string, FilterCondition>;
+
 export interface QueryOptions {
   topK: number;
+  /** Structured metadata filter (page_type, source_tier, lifecycle, …). */
+  filter?: MetadataFilter;
+  /** Namespace partition to restrict the search to (P5 sets namespace=page_type). */
+  namespace?: string;
 }
 
 export interface IVectorIndexClient {

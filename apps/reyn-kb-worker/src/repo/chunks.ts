@@ -72,3 +72,29 @@ export async function getChunksByIds(db: D1Database, ids: readonly string[]): Pr
   }
   return ordered;
 }
+
+export interface FtsHit {
+  id: string;
+  score: number;
+}
+
+/**
+ * BM25 keyword search over the FTS5 index; returns chunk ids best-first (lower
+ * bm25 = more relevant). No structured filter here — the caller filters by page
+ * fields after hydration (ADR-0023).
+ */
+export async function searchChunksFts(
+  db: D1Database,
+  match: string,
+  limit: number,
+): Promise<FtsHit[]> {
+  const rows = await db
+    .prepare(
+      `SELECT c.id AS id, bm25(chunks_fts) AS score
+       FROM chunks_fts JOIN chunks c ON c.rowid = chunks_fts.rowid
+       WHERE chunks_fts MATCH ? ORDER BY bm25(chunks_fts) LIMIT ?`,
+    )
+    .bind(match, limit)
+    .all<FtsHit>();
+  return rows.results;
+}

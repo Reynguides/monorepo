@@ -148,6 +148,22 @@ export async function listAllPages(db: D1Database): Promise<PageRow[]> {
   return rows.results;
 }
 
+/** Batch-load pages by id into a map (search hydration). */
+export async function getPagesByIds(
+  db: D1Database,
+  ids: readonly string[],
+): Promise<Map<string, PageRow>> {
+  const map = new Map<string, PageRow>();
+  if (ids.length === 0) return map;
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = await db
+    .prepare(`SELECT * FROM pages WHERE id IN (${placeholders})`)
+    .bind(...ids)
+    .all<PageRow>();
+  for (const r of rows.results) map.set(r.id, r);
+  return map;
+}
+
 export interface PageRef {
   id: string;
   canonical_url: string | null;
