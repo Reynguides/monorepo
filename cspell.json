@@ -169,7 +169,10 @@
         "Worldwalker",
         "xunit",
         "Zod",
-        "zod"
+        "zod",
+        "baai",
+        "tiktoken",
+        "workerd"
     ],
     "allowCompoundWords": true
 }
