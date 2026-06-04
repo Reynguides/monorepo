@@ -61,4 +61,4 @@ The central question is **build vs. adapt**: hand-roll, or adopt Workers-compati
 - Cloudflare D1 SQL (FTS5 support): <https://developers.cloudflare.com/d1/sql-api/sql-statements/>
 - Vectorize metadata filtering: <https://developers.cloudflare.com/vectorize/reference/metadata-filtering/>
 - Workers bundle limits: <https://developers.cloudflare.com/workers/platform/limits/>
-- Plan: `lively-wibbling-locket` (KB engine + search API).
+- The Knowledge Base implementation plan (KB engine + indexing + search API).

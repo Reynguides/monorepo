@@ -58,4 +58,4 @@ The KB also needs *structure*, not just text: heading hierarchy (for `sections` 
 
 - [[adr-0017-knowledge-base-worker-platform-first]] — the platform-first stance this implements.
 - Cloudflare HTMLRewriter: <https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/>
-- Plan: `lively-wibbling-locket` (extraction + sectioning, Phase 4).
+- The Knowledge Base implementation plan (extraction + sectioning, Phase 4).
