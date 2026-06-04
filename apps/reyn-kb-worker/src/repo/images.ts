@@ -103,6 +103,17 @@ export async function linkChunkImage(
     .run();
 }
 
+/** `chunk_images` links pointing at a missing chunk or image — drift (verify, P8). */
+export async function countDanglingChunkImages(db: D1Database): Promise<number> {
+  return (await db
+    .prepare(
+      `SELECT count(*) AS n FROM chunk_images ci
+       WHERE NOT EXISTS (SELECT 1 FROM chunks c WHERE c.id = ci.chunk_id)
+          OR NOT EXISTS (SELECT 1 FROM images i WHERE i.id = ci.image_id)`,
+    )
+    .first<{ n: number }>())!.n;
+}
+
 export async function listImagesByChunk(db: D1Database, chunkId: string): Promise<ImageRow[]> {
   const rows = await db
     .prepare(

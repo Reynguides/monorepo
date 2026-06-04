@@ -73,6 +73,22 @@ export async function getChunksByIds(db: D1Database, ids: readonly string[]): Pr
   return ordered;
 }
 
+/**
+ * FTS5 self-integrity check including external-content match (`rank = 1`): verifies
+ * the index is internally sound AND consistent with the `chunks` content table, so a
+ * missing/extra/mismatched trigger-maintained entry is caught. A `count(*)` comparison
+ * cannot detect this — on an external-content table that read passes through to the
+ * content table. Returns false on any drift (the check raises `SQLITE_CORRUPT_VTAB`).
+ */
+export async function ftsIndexConsistent(db: D1Database): Promise<boolean> {
+  try {
+    await db.prepare("INSERT INTO chunks_fts(chunks_fts, rank) VALUES('integrity-check', 1)").run();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export interface FtsHit {
   id: string;
   score: number;

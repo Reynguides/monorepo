@@ -16,6 +16,7 @@ import { listSources } from "../../repo/sources.ts";
 import { listEdgesBySrcPage } from "../../repo/edges.ts";
 import { reciprocalRankFusion } from "../../lib/fusion.ts";
 import { freshnessScore, tierBoost } from "../../lib/scoring.ts";
+import { logEvent } from "../../lib/log.ts";
 import {
   buildVectorFilter,
   rowPasses,
@@ -228,5 +229,11 @@ export const searchHandler: Handler<{ Bindings: Env }> = async (c) => {
     return fail(c, 400, "validation_failed", undefined, parsed.error.issues);
   }
   const results = await runSearch(c.env, parsed.data);
+  logEvent("info", "kb.search", {
+    mode: parsed.data.mode,
+    topK: parsed.data.topK,
+    expand: parsed.data.expand,
+    results: results.length,
+  });
   return c.json({ query: parsed.data.query, mode: parsed.data.mode, results }, 200);
 };
