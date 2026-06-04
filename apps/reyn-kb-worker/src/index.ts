@@ -8,6 +8,7 @@ import { getPageHandler, listPagesHandler } from "./handlers/kb/pages-read.ts";
 import { storeImageHandler } from "./handlers/kb/images-write.ts";
 import { getImageHandler } from "./handlers/kb/images-read.ts";
 import { indexPageHandler } from "./handlers/kb/index-page.ts";
+import { searchHandler } from "./handlers/kb/search.ts";
 
 export const app = new Hono<{ Bindings: Env }>();
 
@@ -23,7 +24,6 @@ app.post("/v1/kb/pages/:id/index", requireIngestKey, indexPageHandler);
 app.get("/v1/kb/pages", listPagesHandler);
 app.get("/v1/kb/pages/:id", getPageHandler);
 app.get("/v1/kb/images/:id", getImageHandler);
-
-// Index (P5) and hybrid search (P7) routes are added in their phases.
+app.post("/v1/kb/search", searchHandler);
 
 export default app;

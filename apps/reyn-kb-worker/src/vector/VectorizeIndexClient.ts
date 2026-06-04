@@ -13,9 +13,16 @@ import type {
  * unit-testable with a stub. The production binding (`env.VECTORIZE`) is
  * structurally compatible.
  */
+export interface VectorizeQueryOptions {
+  topK: number;
+  returnMetadata?: string;
+  filter?: Record<string, unknown>;
+  namespace?: string;
+}
+
 export interface VectorizeBinding {
   upsert(vectors: VectorRecord[]): Promise<unknown>;
-  query(vector: number[], options: { topK: number }): Promise<{ matches?: VectorMatch[] }>;
+  query(vector: number[], options: VectorizeQueryOptions): Promise<{ matches?: VectorMatch[] }>;
   deleteByIds(ids: string[]): Promise<unknown>;
   getByIds(ids: string[]): Promise<VectorRef[]>;
 }
@@ -37,7 +44,12 @@ export class VectorizeIndexClient implements IVectorIndexClient {
   }
 
   public async query(vector: number[], opts: QueryOptions): Promise<VectorMatch[]> {
-    const result = await this.index.query(vector, { topK: opts.topK });
+    const result = await this.index.query(vector, {
+      topK: opts.topK,
+      returnMetadata: "all",
+      ...(opts.filter !== undefined ? { filter: opts.filter } : {}),
+      ...(opts.namespace !== undefined ? { namespace: opts.namespace } : {}),
+    });
     return result.matches ?? [];
   }
 

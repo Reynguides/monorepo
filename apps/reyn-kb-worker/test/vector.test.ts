@@ -1,8 +1,12 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { MockVectorIndexClient } from "../src/vector/MockVectorIndexClient.ts";
-import { VectorizeIndexClient, type VectorizeBinding } from "../src/vector/VectorizeIndexClient.ts";
+import {
+  VectorizeIndexClient,
+  type VectorizeBinding,
+  type VectorizeQueryOptions,
+} from "../src/vector/VectorizeIndexClient.ts";
 import { createVectorIndexClient, resetMockVectorIndexClient } from "../src/vector/factory.ts";
-import { VectorIndexError, type VectorRecord } from "../src/vector/types.ts";
+import { VectorIndexError, type MetadataFilter, type VectorRecord } from "../src/vector/types.ts";
 import type { Env } from "../src/types/env.ts";
 
 function asVectorize(x: unknown): VectorizeIndex {
@@ -42,6 +46,57 @@ describe("MockVectorIndexClient", () => {
     await c.deleteByIds(["a"]);
     expect((await c.getByIds(["a", "b"])).map((r) => r.id)).toEqual(["b"]);
   });
+
+  it("honours metadata filters ($in / $lte / $gte / equality) at query time", async () => {
+    const c = new MockVectorIndexClient();
+    await c.upsert([
+      {
+        id: "spell-old",
+        values: [1, 0],
+        metadata: { page_type: "spell", source_tier: 2, crawled_at: 100 },
+      },
+      {
+        id: "spell-new",
+        values: [0.99, 0.01],
+        metadata: { page_type: "spell", source_tier: 1, crawled_at: 500 },
+      },
+      {
+        id: "item-new",
+        values: [0.98, 0.02],
+        metadata: { page_type: "item", source_tier: 1, crawled_at: 500 },
+      },
+    ]);
+    const ids = async (filter: MetadataFilter): Promise<string[]> =>
+      (await c.query([1, 0], { topK: 10, filter })).map((m) => m.id).sort();
+
+    expect(await ids({ page_type: { $in: ["spell"] } })).toEqual(["spell-new", "spell-old"]);
+    expect(await ids({ source_tier: { $lte: 1 } })).toEqual(["item-new", "spell-new"]);
+    expect(await ids({ crawled_at: { $gte: 300 } })).toEqual(["item-new", "spell-new"]);
+    expect(await ids({ page_type: "item" })).toEqual(["item-new"]);
+  });
+
+  it("excludes records whose metadata is missing or the wrong type for the operator", async () => {
+    const c = new MockVectorIndexClient();
+    await c.upsert([
+      { id: "bad-in", values: [1], metadata: { page_type: 7 } },
+      { id: "bad-lte", values: [1], metadata: { source_tier: "x" } },
+      { id: "no-meta", values: [1] },
+    ]);
+    expect(await c.query([1], { topK: 5, filter: { page_type: { $in: ["spell"] } } })).toEqual([]);
+    expect(await c.query([1], { topK: 5, filter: { source_tier: { $lte: 1 } } })).toEqual([]);
+    expect(await c.query([1], { topK: 5, filter: { crawled_at: { $gte: 1 } } })).toEqual([]);
+  });
+
+  it("restricts the search to a namespace partition", async () => {
+    const c = new MockVectorIndexClient();
+    await c.upsert([
+      { id: "s1", values: [1, 0], namespace: "spell" },
+      { id: "i1", values: [1, 0], namespace: "item" },
+    ]);
+    expect((await c.query([1, 0], { topK: 10, namespace: "item" })).map((m) => m.id)).toEqual([
+      "i1",
+    ]);
+  });
 });
 
 describe("VectorizeIndexClient (injected stub binding)", () => {
@@ -72,6 +127,30 @@ describe("VectorizeIndexClient (injected stub binding)", () => {
       getByIds: () => Promise.resolve([]),
     };
     expect(await new VectorizeIndexClient(binding).query([1], { topK: 1 })).toEqual([]);
+  });
+
+  it("forwards filter, namespace, and returnMetadata to the binding", async () => {
+    let captured: VectorizeQueryOptions | undefined;
+    const binding: VectorizeBinding = {
+      upsert: () => Promise.resolve({}),
+      query: (_v, opts) => {
+        captured = opts;
+        return Promise.resolve({ matches: [] });
+      },
+      deleteByIds: () => Promise.resolve({}),
+      getByIds: () => Promise.resolve([]),
+    };
+    await new VectorizeIndexClient(binding).query([1], {
+      topK: 3,
+      filter: { page_type: { $in: ["spell"] } },
+      namespace: "spell",
+    });
+    expect(captured).toEqual({
+      topK: 3,
+      returnMetadata: "all",
+      filter: { page_type: { $in: ["spell"] } },
+      namespace: "spell",
+    });
   });
 });
 
