@@ -1,0 +1,2 @@
+# The kb-d1 migration (0001_init.sql) lands in P1. This keeps the directory
+# (referenced by apps/reyn-kb-worker/wrangler.toml `migrations_dir`) present.
