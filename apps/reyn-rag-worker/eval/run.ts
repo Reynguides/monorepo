@@ -26,6 +26,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 import {
   retrievalHitRate,
   citationScores,
@@ -75,10 +76,11 @@ interface PerItemReport {
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:8787";
 const DEFAULT_TOP_K = 5;
-// Resolve paths relative to this file's directory, handling Windows drive
-// letters (file URL pathname on Windows starts with /C:/ — strip the leading
-// slash before the drive letter).
-const EVAL_DIR = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+// Resolve paths relative to this file's directory. fileURLToPath correctly
+// handles Windows drive letters AND percent-encoded segments (e.g. a space in
+// the repo path becomes %20 in import.meta.url, which a raw URL.pathname leaves
+// encoded and fs cannot open).
+const EVAL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const GOLDEN_PATH = path.join(EVAL_DIR, "golden.json");
 const REPORT_PATH = path.join(EVAL_DIR, "last-report.json");
 
