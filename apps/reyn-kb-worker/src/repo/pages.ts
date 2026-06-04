@@ -167,3 +167,8 @@ export async function listPageRefsBySource(
     .all<PageRef>();
   return rows.results;
 }
+
+/** Persist the cleaned-markdown R2 key after indexing (P5). */
+export async function setPageMdKey(db: D1Database, id: string, r2MdKey: string): Promise<void> {
+  await db.prepare("UPDATE pages SET r2_md_key = ? WHERE id = ?").bind(r2MdKey, id).run();
+}

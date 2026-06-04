@@ -7,6 +7,7 @@ import { storePageHandler } from "./handlers/kb/pages-write.ts";
 import { getPageHandler, listPagesHandler } from "./handlers/kb/pages-read.ts";
 import { storeImageHandler } from "./handlers/kb/images-write.ts";
 import { getImageHandler } from "./handlers/kb/images-read.ts";
+import { indexPageHandler } from "./handlers/kb/index-page.ts";
 
 export const app = new Hono<{ Bindings: Env }>();
 
@@ -16,6 +17,7 @@ app.get("/v1/health", healthHandler);
 app.post("/v1/kb/sources", requireIngestKey, storeSourceHandler);
 app.post("/v1/kb/pages", requireIngestKey, storePageHandler);
 app.post("/v1/kb/images", requireIngestKey, storeImageHandler);
+app.post("/v1/kb/pages/:id/index", requireIngestKey, indexPageHandler);
 
 // KB reads — open.
 app.get("/v1/kb/pages", listPagesHandler);
