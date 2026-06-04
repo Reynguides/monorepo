@@ -25,6 +25,7 @@ import type { IVectorIndexClient, VectorRecord } from "../../vector/types.ts";
 import { extractContent, type ExtractedContent } from "../../lib/extract.ts";
 import { chunkBlocks, type Chunk } from "../../lib/chunking.ts";
 import { approxTokenCount } from "../../lib/tokens.ts";
+import { buildPageRelationships } from "./build-relationships.ts";
 
 const CHUNK_MAX_CHARS = 1200;
 const CHUNK_OVERLAP_CHARS = 150;
@@ -197,5 +198,6 @@ export const indexPageHandler: Handler<{ Bindings: Env }> = async (c) => {
   if (chunks.length > 0) {
     await persistChunks(c, vector, inputs, chunks);
   }
+  await buildPageRelationships(db, page, inputs.sourceTier, extracted);
   return c.json({ pageId: page.id, chunks: chunks.length, reindexed: removed > 0 }, 200);
 };

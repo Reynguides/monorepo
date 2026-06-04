@@ -172,3 +172,29 @@ export async function listPageRefsBySource(
 export async function setPageMdKey(db: D1Database, id: string, r2MdKey: string): Promise<void> {
   await db.prepare("UPDATE pages SET r2_md_key = ? WHERE id = ?").bind(r2MdKey, id).run();
 }
+
+/** Resolve a batch of same-source urls to their page ids (link-edge resolution). */
+export async function mapUrlsToPageIds(
+  db: D1Database,
+  sourceId: string,
+  urls: readonly string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (urls.length === 0) return map;
+  const placeholders = urls.map(() => "?").join(", ");
+  const rows = await db
+    .prepare(`SELECT id, url FROM pages WHERE source_id = ? AND url IN (${placeholders})`)
+    .bind(sourceId, ...urls)
+    .all<{ id: string; url: string }>();
+  for (const r of rows.results) map.set(r.url, r.id);
+  return map;
+}
+
+/** Update a page's lifecycle (e.g. mark `deprecated` on a conflict loser, P6). */
+export async function setPageLifecycle(
+  db: D1Database,
+  id: string,
+  lifecycle: string,
+): Promise<void> {
+  await db.prepare("UPDATE pages SET lifecycle = ? WHERE id = ?").bind(lifecycle, id).run();
+}
