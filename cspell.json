@@ -185,7 +185,19 @@
         "cheerio",
         "jsdom",
         "Playwright",
-        "deduped"
+        "deduped",
+        "Hono",
+        "hono",
+        "Vectorize",
+        "vectorize",
+        "RRF",
+        "reranked",
+        "bge",
+        "unindexed",
+        "decisioned",
+        "absolutized",
+        "Reynguides",
+        "EBUSY"
     ],
     "allowCompoundWords": true
 }
