@@ -172,7 +172,12 @@
         "zod",
         "baai",
         "tiktoken",
-        "workerd"
+        "workerd",
+        "upsert",
+        "upserts",
+        "upserted",
+        "reranker",
+        "rerank"
     ],
     "allowCompoundWords": true
 }
