@@ -8,6 +8,13 @@
 export interface LlmInput {
   system?: string;
   prompt: string;
+  /**
+   * Sampling temperature forwarded to the live model (OpenRouter path). Lower
+   * values (0.0–0.2) reduce creativity and hallucination, which suits grounded,
+   * context-only answering. Omitted → the provider's own default. The mock
+   * provider ignores it (its output is deterministic).
+   */
+  temperature?: number;
 }
 
 export interface ILlmProvider {

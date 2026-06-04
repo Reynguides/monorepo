@@ -125,7 +125,10 @@ The query handler already enforces a trust boundary:
 Further levers:
 
 - **Temperature**: lower temperature (0.0–0.2) reduces creativity and
-  hallucination; the OpenRouter path accepts a `temperature` parameter.
+  hallucination. The query handler already passes a low default
+  (`GENERATION_TEMPERATURE = 0.2` in `handlers/rag/query.ts`), which the
+  OpenRouter path forwards to the model via the `temperature` field on
+  `LlmInput`. Adjust the constant to retune; the mock provider ignores it.
 - **Instruction following**: add a numbered list format requirement to the
   system prompt if structured output is needed for downstream parsing.
 - **Re-ranking topK**: increase `topK` to retrieve more candidates before

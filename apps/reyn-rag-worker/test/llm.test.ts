@@ -123,6 +123,28 @@ describe("OpenRouterLlmProvider", () => {
     expect(body.messages[0]!.role).toBe("user");
   });
 
+  it("forwards temperature in the request body when supplied", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ choices: [{ message: { content: "ok" } }] }));
+    await makeProvider(fetcher).generate({ prompt: "q", temperature: 0.2 });
+    const body = JSON.parse((fetcher.mock.calls[0]![1] as RequestInit).body as string) as {
+      temperature?: number;
+    };
+    expect(body.temperature).toBe(0.2);
+  });
+
+  it("omits temperature from the request body when not supplied", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ choices: [{ message: { content: "ok" } }] }));
+    await makeProvider(fetcher).generate({ prompt: "q" });
+    const body = JSON.parse((fetcher.mock.calls[0]![1] as RequestInit).body as string) as {
+      temperature?: number;
+    };
+    expect(body).not.toHaveProperty("temperature");
+  });
+
   it("throws on HTTP non-2xx", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response("err", { status: 500 }));
     await expect(makeProvider(fetcher).generate({ prompt: "q" })).rejects.toBeInstanceOf(LlmError);

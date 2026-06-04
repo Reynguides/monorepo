@@ -29,6 +29,13 @@ const CONFIDENCE_THRESHOLD = 0.5;
 /** Freshness half-life: a page this many days old contributes ~0.5. */
 const FRESHNESS_HALF_LIFE_DAYS = 90;
 
+/**
+ * Generation temperature for the (live) LLM. Kept low so answers stay grounded
+ * in the retrieved context and hallucinate less — see docs/rag/tuning.md. The
+ * mock provider ignores it; the OpenRouter path forwards it to the model.
+ */
+const GENERATION_TEMPERATURE = 0.2;
+
 /** Fallback answer when retrieval found nothing to ground an answer on. */
 const NO_CONTEXT_ANSWER = "I don't have any relevant indexed context to answer that question.";
 
@@ -177,6 +184,7 @@ export const ragQueryHandler: Handler<{ Bindings: Env }> = async (c) => {
   const answer = await llm.generate({
     system: SYSTEM_PROMPT,
     prompt: buildPrompt(context, question),
+    temperature: GENERATION_TEMPERATURE,
   });
 
   // Relevance/confidence from the re-ranked cosine scores; freshness from the

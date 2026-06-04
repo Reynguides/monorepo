@@ -41,13 +41,23 @@ export class OpenRouterLlmProvider implements ILlmProvider {
     }
     messages.push({ role: "user", content: input.prompt });
 
+    const payload: { model: string; messages: typeof messages; temperature?: number } = {
+      model: this.model,
+      messages,
+    };
+    // Only forward temperature when the caller set it, so the default request
+    // stays minimal and the model's own default applies otherwise.
+    if (input.temperature !== undefined) {
+      payload.temperature = input.temperature;
+    }
+
     const res = await this.fetcher(this.url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model: this.model, messages }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       throw new LlmError(`OpenRouter chat completion failed: HTTP ${res.status}`);
