@@ -24,8 +24,12 @@ export interface PageUpsertInput {
   id: string;
   sourceId: string;
   url: string;
+  canonicalUrl?: string | null;
   title?: string | null;
   pageType?: string;
+  summary?: string | null;
+  language?: string;
+  tags?: readonly string[];
   contentHash: string;
   r2RawKey?: string | null;
   crawledAt: number;
@@ -62,18 +66,30 @@ export async function upsertPageByUrl(
   db: D1Database,
   input: PageUpsertInput,
 ): Promise<PageUpsertResult> {
+  const canonicalUrl = input.canonicalUrl ?? input.url;
+  const language = input.language ?? "en";
+  const tags = JSON.stringify(input.tags ?? []);
+  const pageType = input.pageType ?? "article";
+  const title = input.title ?? null;
+  const summary = input.summary ?? null;
+  const r2RawKey = input.r2RawKey ?? null;
   const existing = await getPageBySourceUrl(db, input.sourceId, input.url);
   if (existing) {
     await db
       .prepare(
-        `UPDATE pages SET title = ?, page_type = ?, content_hash = ?, r2_raw_key = ?,
-           version = version + 1, updated_at = ? WHERE id = ?`,
+        `UPDATE pages SET canonical_url = ?, title = ?, page_type = ?, summary = ?, language = ?,
+           tags = ?, content_hash = ?, r2_raw_key = ?, version = version + 1, updated_at = ?
+         WHERE id = ?`,
       )
       .bind(
-        input.title ?? null,
-        input.pageType ?? "article",
+        canonicalUrl,
+        title,
+        pageType,
+        summary,
+        language,
+        tags,
         input.contentHash,
-        input.r2RawKey ?? null,
+        r2RawKey,
         input.updatedAt,
         existing.id,
       )
@@ -82,17 +98,22 @@ export async function upsertPageByUrl(
   }
   await db
     .prepare(
-      `INSERT INTO pages (id, source_id, url, title, page_type, content_hash, r2_raw_key, crawled_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO pages (id, source_id, url, canonical_url, title, page_type, summary, language,
+         tags, content_hash, r2_raw_key, crawled_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       input.id,
       input.sourceId,
       input.url,
-      input.title ?? null,
-      input.pageType ?? "article",
+      canonicalUrl,
+      title,
+      pageType,
+      summary,
+      language,
+      tags,
       input.contentHash,
-      input.r2RawKey ?? null,
+      r2RawKey,
       input.crawledAt,
       input.updatedAt,
     )
@@ -124,5 +145,25 @@ export async function listPagesBySource(
 
 export async function listAllPages(db: D1Database): Promise<PageRow[]> {
   const rows = await db.prepare("SELECT * FROM pages ORDER BY id").all<PageRow>();
+  return rows.results;
+}
+
+export interface PageRef {
+  id: string;
+  canonical_url: string | null;
+  content_hash: string;
+}
+
+/** Lightweight (id, canonical_url, content_hash) refs for a source's pages,
+ *  excluding `excludeUrl` — feeds the dedup rule phase at the write boundary. */
+export async function listPageRefsBySource(
+  db: D1Database,
+  sourceId: string,
+  excludeUrl: string,
+): Promise<PageRef[]> {
+  const rows = await db
+    .prepare("SELECT id, canonical_url, content_hash FROM pages WHERE source_id = ? AND url != ?")
+    .bind(sourceId, excludeUrl)
+    .all<PageRef>();
   return rows.results;
 }

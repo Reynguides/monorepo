@@ -26,3 +26,13 @@ export async function call(path: string, init: CallInit = {}): Promise<Response>
   });
   return await app.fetch(req, env);
 }
+
+/**
+ * Reads a JSON response body as `T`. `Response.json()` is typed `unknown`; the
+ * explicit `unknown` annotation keeps the assertion necessary (so
+ * no-unnecessary-type-assertion is satisfied) while giving callers a typed value.
+ */
+export async function readJson<T>(res: Response): Promise<T> {
+  const raw: unknown = await res.json();
+  return raw as T;
+}

@@ -73,6 +73,17 @@ export async function getImageById(db: D1Database, id: string): Promise<ImageRow
   return await db.prepare("SELECT * FROM images WHERE id = ?").bind(id).first<ImageRow>();
 }
 
+export async function getImageByPageUrl(
+  db: D1Database,
+  pageId: string,
+  url: string,
+): Promise<ImageRow | null> {
+  return await db
+    .prepare("SELECT * FROM images WHERE page_id = ? AND url = ?")
+    .bind(pageId, url)
+    .first<ImageRow>();
+}
+
 export async function listImagesByPage(db: D1Database, pageId: string): Promise<ImageRow[]> {
   const rows = await db
     .prepare("SELECT * FROM images WHERE page_id = ? ORDER BY url")
