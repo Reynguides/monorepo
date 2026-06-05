@@ -189,20 +189,29 @@ export async function setPageMdKey(db: D1Database, id: string, r2MdKey: string):
   await db.prepare("UPDATE pages SET r2_md_key = ? WHERE id = ?").bind(r2MdKey, id).run();
 }
 
-/** Resolve a batch of same-source urls to their page ids (link-edge resolution). */
+/**
+ * Resolve a batch of same-source urls to their page ids (link-edge resolution).
+ * Link-heavy pages can carry hundreds of distinct urls, so the IN-list is chunked
+ * to stay within D1's hard limit of 100 bound parameters PER QUERY (it raises
+ * `too many SQL variables` otherwise). The batch leaves room for the `sourceId`
+ * bind, so it must be < 100.
+ */
 export async function mapUrlsToPageIds(
   db: D1Database,
   sourceId: string,
   urls: readonly string[],
 ): Promise<Map<string, string>> {
   const map = new Map<string, string>();
-  if (urls.length === 0) return map;
-  const placeholders = urls.map(() => "?").join(", ");
-  const rows = await db
-    .prepare(`SELECT id, url FROM pages WHERE source_id = ? AND url IN (${placeholders})`)
-    .bind(sourceId, ...urls)
-    .all<{ id: string; url: string }>();
-  for (const r of rows.results) map.set(r.url, r.id);
+  const BATCH = 90;
+  for (let i = 0; i < urls.length; i += BATCH) {
+    const batch = urls.slice(i, i + BATCH);
+    const placeholders = batch.map(() => "?").join(", ");
+    const rows = await db
+      .prepare(`SELECT id, url FROM pages WHERE source_id = ? AND url IN (${placeholders})`)
+      .bind(sourceId, ...batch)
+      .all<{ id: string; url: string }>();
+    for (const r of rows.results) map.set(r.url, r.id);
+  }
   return map;
 }
 

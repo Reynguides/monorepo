@@ -90,14 +90,15 @@ async function run(): Promise<void> {
     requestQueue,
     maxRequestsPerMinute: 30,
     maxConcurrency: 2,
-    async requestHandler({ request, body }) {
+    async requestHandler({ request, body, $ }) {
       const html = typeof body === "string" ? body : body.toString("utf8");
+      const title = ($("h1").first().text() || $("title").first().text()).trim().slice(0, 500);
       const status = await postJson(
         `${opts.apiBase}/v1/kb/pages`,
         opts.ingestKey,
-        toPageRequest(opts.source, request.url, html),
+        toPageRequest(opts.source, request.url, html, title),
       );
-      log.info(`ingested ${request.url} -> HTTP ${status}`);
+      log.info(`ingested ${request.url} -> HTTP ${status} (title: ${title || "<none>"})`);
     },
   });
 

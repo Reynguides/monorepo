@@ -49,6 +49,28 @@ export const SOURCE_CATALOG: readonly SourceDef[] = [
     allowPathPrefixes: ["/wiki/"],
     defaultPageType: "article",
   },
+  {
+    id: "fextralife",
+    name: "Fextralife BG3 Wiki",
+    baseUrl: "https://baldursgate3.wiki.fextralife.com",
+    // Flat urlset; content lives at root paths (e.g. /Rozes+Kallista), not /wiki/.
+    sitemapUrl: "https://baldursgate3.wiki.fextralife.com/sitemap.xml",
+    tier: 2,
+    license: "(c) Fextralife — fan wiki; crawled for local testing only",
+    allowPathPrefixes: [],
+    defaultPageType: "article",
+  },
+  {
+    id: "gamerguides",
+    name: "GamerGuides BG3",
+    baseUrl: "https://www.gamerguides.com",
+    // BG3-dense flat sitemap chunk; avoids loading the whole multi-game index.
+    sitemapUrl: "https://www.gamerguides.com/sitemap/1/300",
+    tier: 3,
+    license: "(c) GamerGuides — commercial; crawled for local testing only",
+    allowPathPrefixes: ["/baldurs-gate-3"],
+    defaultPageType: "article",
+  },
 ];
 
 export function getSource(id: string): SourceDef | undefined {
@@ -99,7 +121,15 @@ export function toSourceRegistration(source: SourceDef): StoreSourceRequest {
   };
 }
 
-/** Page-ingest body for `POST /v1/kb/pages`. */
-export function toPageRequest(source: SourceDef, url: string, html: string): StorePageRequest {
-  return { sourceId: source.id, url, html, pageType: source.defaultPageType };
+/** Page-ingest body for `POST /v1/kb/pages`. `title` (from the crawler's parsed
+ * DOM) is included only when present — the write handler stores it on the page row
+ * (indexing never back-fills the title), so it must arrive at ingest. */
+export function toPageRequest(
+  source: SourceDef,
+  url: string,
+  html: string,
+  title?: string,
+): StorePageRequest {
+  const base: StorePageRequest = { sourceId: source.id, url, html, pageType: source.defaultPageType };
+  return title !== undefined && title.length > 0 ? { ...base, title } : base;
 }

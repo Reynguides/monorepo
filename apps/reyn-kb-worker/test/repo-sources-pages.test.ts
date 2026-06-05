@@ -8,6 +8,7 @@ import {
   getPageBySourceUrl,
   listPagesBySource,
   listAllPages,
+  mapUrlsToPageIds,
 } from "../src/repo/pages.ts";
 
 const now = 1_700_000_000_000;
@@ -130,5 +131,36 @@ describe("repo/pages", () => {
     expect(page2.nextCursor).toBeNull();
 
     expect((await listAllPages(env.KB_DB)).length).toBe(3);
+  });
+
+  it("resolves more urls than D1's per-query bound-parameter cap (regression)", async () => {
+    await seedSource();
+    await upsertPageByUrl(env.KB_DB, {
+      id: "pa",
+      sourceId: "s1",
+      url: "https://bg3.wiki/Drow",
+      contentHash: "h",
+      crawledAt: now,
+      updatedAt: now,
+    });
+    await upsertPageByUrl(env.KB_DB, {
+      id: "pb",
+      sourceId: "s1",
+      url: "https://bg3.wiki/Githyanki",
+      contentHash: "h",
+      crawledAt: now,
+      updatedAt: now,
+    });
+    // 250 distinct urls exceed D1's hard limit of 100 bound parameters per query.
+    // Before the IN-list was chunked, this threw "D1_ERROR: too many SQL variables"
+    // (link-heavy wiki pages carry hundreds of links).
+    const urls = Array.from({ length: 250 }, (_, i) => `https://bg3.wiki/Link_${i}`);
+    urls.push("https://bg3.wiki/Drow", "https://bg3.wiki/Githyanki");
+
+    const map = await mapUrlsToPageIds(env.KB_DB, "s1", urls);
+    expect(map.size).toBe(2);
+    expect(map.get("https://bg3.wiki/Drow")).toBe("pa");
+    expect(map.get("https://bg3.wiki/Githyanki")).toBe("pb");
+    expect(map.has("https://bg3.wiki/Link_0")).toBe(false);
   });
 });
