@@ -48,8 +48,10 @@ node_modules/
 .dev.vars
 .dev.vars.*
 
-# Local scratch tooling (one-off fill/index scripts; not product code)
+# Local scratch tooling (one-off fill/index scripts, notes, checkpoints; not product code)
 *.local.mjs
+*.local.txt
+*.local.json
 
 # Claude Code local agent config (machine-local; not shared)
 .claude/
