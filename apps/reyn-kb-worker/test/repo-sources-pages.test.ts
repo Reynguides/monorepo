@@ -8,6 +8,7 @@ import {
   getPageBySourceUrl,
   listPagesBySource,
   listAllPages,
+  getPagesByIds,
   mapUrlsToPageIds,
 } from "../src/repo/pages.ts";
 
@@ -162,5 +163,27 @@ describe("repo/pages", () => {
     expect(map.get("https://bg3.wiki/Drow")).toBe("pa");
     expect(map.get("https://bg3.wiki/Githyanki")).toBe("pb");
     expect(map.has("https://bg3.wiki/Link_0")).toBe(false);
+  });
+
+  it("loads more page ids than D1's per-query bound-parameter cap (regression)", async () => {
+    await seedSource();
+    const ids = Array.from({ length: 150 }, (_, i) => `pp${i}`);
+    for (let i = 0; i < ids.length; i++) {
+      await upsertPageByUrl(env.KB_DB, {
+        id: ids[i]!,
+        sourceId: "s1",
+        url: `https://bg3.wiki/page/${i}`,
+        contentHash: "h",
+        crawledAt: now,
+        updatedAt: now,
+      });
+    }
+    // Search hydration loads one page per distinct result; a common-term search
+    // easily spans >100 pages. Before getPagesByIds chunked its IN-list, this
+    // threw "D1_ERROR: too many SQL variables".
+    const map = await getPagesByIds(env.KB_DB, ids);
+    expect(map.size).toBe(150);
+    expect(map.get("pp0")!.url).toBe("https://bg3.wiki/page/0");
+    expect(map.get("pp149")!.url).toBe("https://bg3.wiki/page/149");
   });
 });

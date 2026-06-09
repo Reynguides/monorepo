@@ -148,19 +148,24 @@ export async function listAllPages(db: D1Database): Promise<PageRow[]> {
   return rows.results;
 }
 
-/** Batch-load pages by id into a map (search hydration). */
+/** Batch-load pages by id into a map (search hydration). The IN-list is chunked
+ *  to stay under D1's 100 bound-parameter cap — a common-term search hydrates one
+ *  page per distinct result and can span well over 100 (cf. `mapUrlsToPageIds`). */
 export async function getPagesByIds(
   db: D1Database,
   ids: readonly string[],
 ): Promise<Map<string, PageRow>> {
   const map = new Map<string, PageRow>();
-  if (ids.length === 0) return map;
-  const placeholders = ids.map(() => "?").join(", ");
-  const rows = await db
-    .prepare(`SELECT * FROM pages WHERE id IN (${placeholders})`)
-    .bind(...ids)
-    .all<PageRow>();
-  for (const r of rows.results) map.set(r.id, r);
+  const BATCH = 90;
+  for (let i = 0; i < ids.length; i += BATCH) {
+    const batch = ids.slice(i, i + BATCH);
+    const placeholders = batch.map(() => "?").join(", ");
+    const rows = await db
+      .prepare(`SELECT * FROM pages WHERE id IN (${placeholders})`)
+      .bind(...batch)
+      .all<PageRow>();
+    for (const r of rows.results) map.set(r.id, r);
+  }
   return map;
 }
 

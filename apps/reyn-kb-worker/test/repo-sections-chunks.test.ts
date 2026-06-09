@@ -102,6 +102,24 @@ describe("repo/chunks", () => {
     expect(out.map((c) => c.id)).toEqual(["p1:1", "p1:0"]);
   });
 
+  it("fetches more chunk ids than D1's per-query bound-parameter cap, in order (regression)", async () => {
+    // A common-term search fans out topK*CANDIDATE_FACTOR candidate ids (150 at
+    // topK=50). Before getChunksByIds chunked its IN-list this threw
+    // "D1_ERROR: too many SQL variables" and the whole search returned nothing.
+    const inputs = Array.from({ length: 150 }, (_, i) => ({
+      id: `p1:${i}`,
+      pageId: "p1",
+      ord: i,
+      text: `chunk ${i}`,
+      contentHash: `c${i}`,
+      tokenCount: 1,
+    }));
+    await insertChunks(env.KB_DB, inputs);
+    const ids = inputs.map((c) => c.id);
+    const out = await getChunksByIds(env.KB_DB, ids);
+    expect(out.map((c) => c.id)).toEqual(ids);
+  });
+
   it("deletes all chunks for a page", async () => {
     await insertChunks(env.KB_DB, [
       { id: "p1:0", pageId: "p1", ord: 0, text: "a", contentHash: "c0", tokenCount: 1 },
