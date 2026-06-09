@@ -6,6 +6,7 @@ import {
   type VectorizeQueryOptions,
 } from "../src/vector/VectorizeIndexClient.ts";
 import { createVectorIndexClient, resetMockVectorIndexClient } from "../src/vector/factory.ts";
+import { NoopVectorIndexClient } from "../src/vector/NoopVectorIndexClient.ts";
 import { VectorIndexError, type MetadataFilter, type VectorRecord } from "../src/vector/types.ts";
 import type { Env } from "../src/types/env.ts";
 
@@ -99,6 +100,19 @@ describe("MockVectorIndexClient", () => {
   });
 });
 
+describe("NoopVectorIndexClient (discard)", () => {
+  it("discards upserts and returns no matches or refs", async () => {
+    const c = new NoopVectorIndexClient();
+    await c.upsert([
+      { id: "a", values: [1, 0], metadata: { page_type: "spell" }, namespace: "spell" },
+      { id: "b", values: [0, 1] },
+    ]);
+    expect(await c.query([1, 0], { topK: 10 })).toEqual([]);
+    expect(await c.getByIds(["a", "b"])).toEqual([]);
+    await expect(c.deleteByIds(["a"])).resolves.toBeUndefined();
+  });
+});
+
 describe("VectorizeIndexClient (injected stub binding)", () => {
   it("delegates upsert / query / deleteByIds / getByIds", async () => {
     const upserts: VectorRecord[][] = [];
@@ -175,5 +189,12 @@ describe("createVectorIndexClient", () => {
     expect(() => createVectorIndexClient(baseEnv({ VECTOR_INDEX: "vectorize" }))).toThrow(
       VectorIndexError,
     );
+  });
+
+  it("returns the discard client for VECTOR_INDEX=discard and holds nothing", async () => {
+    const c = createVectorIndexClient(baseEnv({ VECTOR_INDEX: "discard" }));
+    expect(c).toBeInstanceOf(NoopVectorIndexClient);
+    await c.upsert([{ id: "a", values: [1] }]);
+    expect(await c.query([1], { topK: 5 })).toEqual([]);
   });
 });

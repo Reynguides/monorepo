@@ -3,6 +3,8 @@ import type { Env } from "../../types/env.ts";
 import { fail } from "../../lib/errors.ts";
 import { PageListQuery } from "../../schemas/kb.ts";
 import { getPageById, listPagesBySource, type PageRow } from "../../repo/pages.ts";
+import { listChunksByPageId } from "../../repo/chunks.ts";
+import { getEmbeddingStateByChunkIds } from "../../repo/embedding-state.ts";
 import { createObjectStore } from "../../store/factory.ts";
 
 function parseTags(tags: string): string[] {
@@ -53,6 +55,41 @@ export const getPageHandler: Handler<{ Bindings: Env }> = async (c) => {
       updatedAt: page.updated_at,
       html,
       markdown,
+    },
+    200,
+  );
+};
+
+/**
+ * GET /v1/kb/pages/:id/chunks (open) — a page's retrievable chunks plus, per chunk,
+ * whether an embedding ledger row exists. This is the chunk-level "filled in correctly"
+ * view: it distinguishes a never-indexed page (empty list) from one whose chunks are all
+ * present and embedded. `404` if the page id is unknown.
+ */
+export const listPageChunksHandler: Handler<{ Bindings: Env }> = async (c) => {
+  const id = c.req.param("id")!;
+  const page = await getPageById(c.env.KB_DB, id);
+  if (page === null) {
+    return fail(c, 404, "page_not_found");
+  }
+  const chunks = await listChunksByPageId(c.env.KB_DB, id);
+  const ledger = await getEmbeddingStateByChunkIds(
+    c.env.KB_DB,
+    chunks.map((ch) => ch.id),
+  );
+  const embedded = new Set(ledger.map((e) => e.chunk_id));
+  return c.json(
+    {
+      pageId: id,
+      chunks: chunks.map((ch) => ({
+        id: ch.id,
+        sectionId: ch.section_id,
+        ord: ch.ord,
+        headingPath: ch.heading_path,
+        tokenCount: ch.token_count,
+        text: ch.text,
+        hasEmbedding: embedded.has(ch.id),
+      })),
     },
     200,
   );

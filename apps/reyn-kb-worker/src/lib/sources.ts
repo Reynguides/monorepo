@@ -18,6 +18,8 @@ export interface SourceDef {
   allowPathPrefixes: readonly string[];
   /** Page type assigned to ingested pages (rules refine it downstream). */
   defaultPageType: NonNullable<StorePageRequest["pageType"]>;
+  /** Optional regex stripped from the crawled <title> to drop site-name noise. */
+  titleSuffix?: RegExp;
 }
 
 /** MediaWiki namespaces that are never article content (meta/discussion/files). */
@@ -71,6 +73,24 @@ export const SOURCE_CATALOG: readonly SourceDef[] = [
     allowPathPrefixes: ["/baldurs-gate-3"],
     defaultPageType: "article",
   },
+  {
+    id: "game8",
+    name: "Game8 BG3",
+    baseUrl: "https://game8.co",
+    // game8's sitemap index splits per game (game_<id>.xml.gz). BG3 is game 1237
+    // (data-game-id on game8.co/games/BG3), so we target that single .gz — ~1,975
+    // BG3 URLs — instead of the all-games index. Trailing slash in the prefix keeps
+    // it BG3-only (the sitemap lists /games/BG3/archives/<id> exclusively).
+    sitemapUrl: "https://game8.co/sitemaps/game_1237.xml.gz",
+    tier: 3,
+    license: "(c) Game8 — commercial; crawled for local testing only",
+    allowPathPrefixes: ["/games/BG3/"],
+    defaultPageType: "article",
+    // game8 leaves the first <h1> empty, so the crawler falls back to <title>, which
+    // carries a " | Baldur's Gate 3 (BG3)｜Game8" site-name tail. Strip it (the `.`
+    // matches whichever apostrophe glyph the page uses) for clean, distinct titles.
+    titleSuffix: /\s*\|\s*Baldur.s Gate 3.*$/u,
+  },
 ];
 
 export function getSource(id: string): SourceDef | undefined {
@@ -121,15 +141,28 @@ export function toSourceRegistration(source: SourceDef): StoreSourceRequest {
   };
 }
 
+/** Clean a crawled page `<title>`: strip the source's configured site-name suffix
+ * (no-op for sources without one) and trim. Pure — unit-tested. */
+export function cleanPageTitle(source: SourceDef, rawTitle: string): string {
+  const stripped = source.titleSuffix ? rawTitle.replace(source.titleSuffix, "") : rawTitle;
+  return stripped.trim();
+}
+
 /** Page-ingest body for `POST /v1/kb/pages`. `title` (from the crawler's parsed
- * DOM) is included only when present — the write handler stores it on the page row
- * (indexing never back-fills the title), so it must arrive at ingest. */
+ * DOM) is cleaned then included only when non-empty — the write handler stores it on
+ * the page row (indexing never back-fills the title), so it must arrive at ingest. */
 export function toPageRequest(
   source: SourceDef,
   url: string,
   html: string,
   title?: string,
 ): StorePageRequest {
-  const base: StorePageRequest = { sourceId: source.id, url, html, pageType: source.defaultPageType };
-  return title !== undefined && title.length > 0 ? { ...base, title } : base;
+  const base: StorePageRequest = {
+    sourceId: source.id,
+    url,
+    html,
+    pageType: source.defaultPageType,
+  };
+  const cleaned = title === undefined ? "" : cleanPageTitle(source, title);
+  return cleaned.length > 0 ? { ...base, title: cleaned } : base;
 }

@@ -37,10 +37,38 @@ const DROP_TAGS = new Set(["script", "style", "nav", "footer", "aside", "noscrip
 const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
 const BLOCK_TAGS = new Set(["p", "li", "td", "th", "blockquote", "dd"]);
 
+// Site/wiki chrome that lives INSIDE the content area (so the tag drop-list misses
+// it): section "[edit]" links, navigation/navbox templates, and the citation list.
+// Dropped wholesale — text AND links — because template/citation links are not
+// editorial relationships (ADR-0019). Matched on a class token (exact or prefix)
+// or role="navigation".
+const DROP_CLASS_EXACT = new Set(["references", "mw-references-wrap"]);
+const DROP_CLASS_PREFIXES = ["mw-editsection", "navbox"];
+
+// Drop list-item blocks that are mostly hyperlink ("See also" / "External links"
+// style link lists): retrieval noise that pollutes BM25 and dilutes embeddings,
+// while the link targets are still recorded as relationship edges. Only list items
+// are density-filtered — a link-only table cell is still data, and prose with a few
+// links is content. Threshold per Readability's high-confidence link-density cutoff.
+const LINK_DENSITY_DROP = 0.5;
+const DENSITY_FILTERED_TAGS = new Set(["li", "dd"]);
+
 type Mode = "none" | "title" | "heading" | "block";
 
 function collapse(text: string): string {
   return text.replace(/\s+/g, " ").trim();
+}
+
+/** True for in-content chrome to skip entirely (edit-section/navbox/reference list). */
+function isDropContainer(el: Element): boolean {
+  if (el.getAttribute("role") === "navigation") return true;
+  const cls = el.getAttribute("class");
+  if (cls === null) return false;
+  for (const token of cls.split(/\s+/)) {
+    if (DROP_CLASS_EXACT.has(token)) return true;
+    if (DROP_CLASS_PREFIXES.some((p) => token.startsWith(p))) return true;
+  }
+  return false;
 }
 
 class HtmlExtractor {
@@ -53,6 +81,8 @@ class HtmlExtractor {
   private skipDepth = 0;
   private mode: Mode = "none";
   private buf = "";
+  private blockTag = "";
+  private blockLinkChars = 0;
   private headingLevel = 0;
   private headingAnchor: string | null = null;
   private readonly pathStack: { level: number; heading: string }[] = [];
@@ -60,7 +90,7 @@ class HtmlExtractor {
 
   public element = (el: Element): void => {
     const tag = el.tagName.toLowerCase();
-    if (DROP_TAGS.has(tag)) {
+    if (DROP_TAGS.has(tag) || isDropContainer(el)) {
       this.skipDepth += 1;
       el.onEndTag(() => {
         this.skipDepth -= 1;
@@ -92,6 +122,7 @@ class HtmlExtractor {
       });
     } else if (BLOCK_TAGS.has(tag)) {
       this.flushBlock();
+      this.blockTag = tag;
       this.startCapture("block");
       el.onEndTag(() => {
         this.flushBlock();
@@ -108,7 +139,10 @@ class HtmlExtractor {
     const href = el.getAttribute("href");
     if (href === null) return;
     const start = this.buf.length;
+    const inBlock = this.mode === "block";
     el.onEndTag(() => {
+      // Count anchor chars toward the current block's link density (link lists).
+      if (inBlock) this.blockLinkChars += this.buf.length - start;
       this.links.push({ href, text: collapse(this.buf.slice(start)) });
     });
   }
@@ -125,10 +159,24 @@ class HtmlExtractor {
 
   private flushBlock(): void {
     if (this.mode === "block") {
+      const rawLen = this.buf.length;
       const text = collapse(this.buf);
-      if (text.length > 0) this.blocks.push({ headingPath: this.currentHeadingPath, text });
+      if (text.length > 0 && !this.isLinkDense(rawLen)) {
+        this.blocks.push({ headingPath: this.currentHeadingPath, text });
+      }
     }
+    this.blockLinkChars = 0;
+    this.blockTag = "";
     this.resetCapture();
+  }
+
+  /** A list item that is mostly hyperlink — a "See also"/"External links" entry. */
+  private isLinkDense(rawLen: number): boolean {
+    return (
+      DENSITY_FILTERED_TAGS.has(this.blockTag) &&
+      rawLen > 0 &&
+      this.blockLinkChars / rawLen > LINK_DENSITY_DROP
+    );
   }
 
   private finishTitle(): void {

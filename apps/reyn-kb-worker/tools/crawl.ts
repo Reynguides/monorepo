@@ -25,6 +25,8 @@ interface CrawlOptions {
   source: SourceDef;
   apiBase: string;
   limit: number;
+  rpm: number;
+  concurrency: number;
   ingestKey: string;
 }
 
@@ -33,9 +35,9 @@ function readFlag(args: readonly string[], name: string): string | undefined {
   return i >= 0 ? args[i + 1] : undefined;
 }
 
-function parseLimit(raw: string | undefined): number {
-  const n = Number(raw ?? "25");
-  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 25;
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  const n = Number(raw ?? String(fallback));
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : fallback;
 }
 
 function parseOptions(args: readonly string[]): CrawlOptions {
@@ -50,7 +52,9 @@ function parseOptions(args: readonly string[]): CrawlOptions {
   return {
     source,
     apiBase: readFlag(args, "api") ?? "http://127.0.0.1:8787",
-    limit: parseLimit(readFlag(args, "limit")),
+    limit: parsePositiveInt(readFlag(args, "limit"), 25),
+    rpm: parsePositiveInt(readFlag(args, "rpm"), 30),
+    concurrency: parsePositiveInt(readFlag(args, "concurrency"), 2),
     ingestKey,
   };
 }
@@ -73,7 +77,9 @@ async function discoverUrls(source: SourceDef, limit: number): Promise<string[]>
 
 async function run(): Promise<void> {
   const opts = parseOptions(argv.slice(2));
-  log.info(`crawl start: source=${opts.source.id} api=${opts.apiBase} limit=${opts.limit}`);
+  log.info(
+    `crawl start: source=${opts.source.id} api=${opts.apiBase} limit=${opts.limit} rpm=${opts.rpm} concurrency=${opts.concurrency}`,
+  );
 
   const sourceStatus = await postJson(
     `${opts.apiBase}/v1/kb/sources`,
@@ -88,8 +94,8 @@ async function run(): Promise<void> {
   const requestQueue = await RequestQueue.open(opts.source.id);
   const crawler = new CheerioCrawler({
     requestQueue,
-    maxRequestsPerMinute: 30,
-    maxConcurrency: 2,
+    maxRequestsPerMinute: opts.rpm,
+    maxConcurrency: opts.concurrency,
     async requestHandler({ request, body, $ }) {
       const html = typeof body === "string" ? body : body.toString("utf8");
       const title = ($("h1").first().text() || $("title").first().text()).trim().slice(0, 500);

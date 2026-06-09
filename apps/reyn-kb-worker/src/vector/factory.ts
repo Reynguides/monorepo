@@ -1,5 +1,6 @@
 import type { Env } from "../types/env.ts";
 import { MockVectorIndexClient } from "./MockVectorIndexClient.ts";
+import { NoopVectorIndexClient } from "./NoopVectorIndexClient.ts";
 import { VectorizeIndexClient, type VectorizeBinding } from "./VectorizeIndexClient.ts";
 import { VectorIndexError, type IVectorIndexClient } from "./types.ts";
 
@@ -33,6 +34,9 @@ export function createVectorIndexClient(env: Env): IVectorIndexClient {
   switch (env.VECTOR_INDEX) {
     case "mock":
       return getMockSingleton();
+    case "discard":
+      // Local/demo fills of any size: write chunks + ledger, hold no vectors.
+      return new NoopVectorIndexClient();
     case "vectorize": {
       if (env.VECTORIZE === undefined) {
         throw new VectorIndexError("VECTORIZE binding must be present when VECTOR_INDEX=vectorize");

@@ -1,5 +1,10 @@
 /** D1 wrapper for `chunks` — retrievable text slices (id = Vectorize vector id). */
 
+// D1 caps a single query at 100 bound parameters. Search fans out far more
+// candidate ids than that (topK * CANDIDATE_FACTOR — 150 at topK=50), so every
+// `id IN (…)` lookup is chunked to stay under the cap (cf. `mapUrlsToPageIds`).
+const ID_BATCH = 90;
+
 export interface ChunkRow {
   id: string;
   page_id: string;
@@ -59,12 +64,16 @@ export async function deleteChunksByPageId(db: D1Database, pageId: string): Prom
 /** Fetch chunks by id, returned in the caller's id order (vector matches order). */
 export async function getChunksByIds(db: D1Database, ids: readonly string[]): Promise<ChunkRow[]> {
   if (ids.length === 0) return [];
-  const placeholders = ids.map(() => "?").join(", ");
-  const rows = await db
-    .prepare(`SELECT * FROM chunks WHERE id IN (${placeholders})`)
-    .bind(...ids)
-    .all<ChunkRow>();
-  const byId = new Map(rows.results.map((r) => [r.id, r]));
+  const byId = new Map<string, ChunkRow>();
+  for (let i = 0; i < ids.length; i += ID_BATCH) {
+    const batch = ids.slice(i, i + ID_BATCH);
+    const placeholders = batch.map(() => "?").join(", ");
+    const rows = await db
+      .prepare(`SELECT * FROM chunks WHERE id IN (${placeholders})`)
+      .bind(...batch)
+      .all<ChunkRow>();
+    for (const r of rows.results) byId.set(r.id, r);
+  }
   const ordered: ChunkRow[] = [];
   for (const id of ids) {
     const row = byId.get(id);
