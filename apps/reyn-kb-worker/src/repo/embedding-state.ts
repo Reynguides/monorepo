@@ -1,5 +1,10 @@
 /** D1 wrapper for `embedding_state` — the authoritative chunk -> vector ledger. */
 
+// D1 caps a single query at 100 bound parameters. A page can carry far more than
+// 100 chunks (dense walkthrough pages), so every `chunk_id IN (…)` over a page's
+// chunk list is chunked to stay under the cap (cf. `mapUrlsToPageIds`).
+const ID_BATCH = 90;
+
 export interface EmbeddingStateRow {
   chunk_id: string;
   model: string;
@@ -51,25 +56,31 @@ export async function deleteEmbeddingStateByChunkIds(
   db: D1Database,
   chunkIds: readonly string[],
 ): Promise<void> {
-  if (chunkIds.length === 0) return;
-  const placeholders = chunkIds.map(() => "?").join(", ");
-  await db
-    .prepare(`DELETE FROM embedding_state WHERE chunk_id IN (${placeholders})`)
-    .bind(...chunkIds)
-    .run();
+  for (let i = 0; i < chunkIds.length; i += ID_BATCH) {
+    const batch = chunkIds.slice(i, i + ID_BATCH);
+    const placeholders = batch.map(() => "?").join(", ");
+    await db
+      .prepare(`DELETE FROM embedding_state WHERE chunk_id IN (${placeholders})`)
+      .bind(...batch)
+      .run();
+  }
 }
 
 export async function getEmbeddingStateByChunkIds(
   db: D1Database,
   chunkIds: readonly string[],
 ): Promise<EmbeddingStateRow[]> {
-  if (chunkIds.length === 0) return [];
-  const placeholders = chunkIds.map(() => "?").join(", ");
-  const rows = await db
-    .prepare(`SELECT * FROM embedding_state WHERE chunk_id IN (${placeholders})`)
-    .bind(...chunkIds)
-    .all<EmbeddingStateRow>();
-  return rows.results;
+  const out: EmbeddingStateRow[] = [];
+  for (let i = 0; i < chunkIds.length; i += ID_BATCH) {
+    const batch = chunkIds.slice(i, i + ID_BATCH);
+    const placeholders = batch.map(() => "?").join(", ");
+    const rows = await db
+      .prepare(`SELECT * FROM embedding_state WHERE chunk_id IN (${placeholders})`)
+      .bind(...batch)
+      .all<EmbeddingStateRow>();
+    out.push(...rows.results);
+  }
+  return out;
 }
 
 /** Chunk ids lacking an embedding row for `model` (drift) — used by verify (P8). */

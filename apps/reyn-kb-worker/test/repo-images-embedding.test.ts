@@ -124,4 +124,28 @@ describe("repo/embedding-state", () => {
     await deleteEmbeddingStateByChunkIds(env.KB_DB, ["p1:0"]);
     expect(await getEmbeddingStateByChunkIds(env.KB_DB, ["p1:0", "p1:1"])).toEqual([]);
   });
+
+  it("get/delete handle >100 chunk ids without exceeding D1's 100-bound-parameter limit", async () => {
+    const ids = Array.from({ length: 150 }, (_, i) => `p1:big${i}`);
+    await insertChunks(
+      env.KB_DB,
+      ids.map((id, i) => ({
+        id,
+        pageId: "p1",
+        ord: 100 + i,
+        text: "x",
+        contentHash: "h" + i,
+        tokenCount: 1,
+      })),
+    );
+    await insertEmbeddingState(
+      env.KB_DB,
+      ids.map((id) => ({ chunkId: id, model: MODEL, vectorId: id, indexedAt: now })),
+    );
+    // A page with >100 chunks: a single IN (...) over every id would raise
+    // "too many SQL variables" — both helpers must chunk the id list.
+    expect((await getEmbeddingStateByChunkIds(env.KB_DB, ids)).length).toBe(150);
+    await deleteEmbeddingStateByChunkIds(env.KB_DB, ids);
+    expect(await getEmbeddingStateByChunkIds(env.KB_DB, ids)).toEqual([]);
+  });
 });

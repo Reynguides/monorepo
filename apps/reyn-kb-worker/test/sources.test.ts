@@ -16,6 +16,26 @@ describe("getSource", () => {
   });
 });
 
+describe("game8 source", () => {
+  const game8 = getSource("game8");
+
+  it("targets the single BG3 per-game sitemap, not the all-games index", () => {
+    expect(game8).toBeDefined();
+    expect(game8!.baseUrl).toBe("https://game8.co");
+    expect(game8!.sitemapUrl).toBe("https://game8.co/sitemaps/game_1237.xml.gz");
+    expect(game8!.allowPathPrefixes).toEqual(["/games/BG3/"]);
+  });
+
+  it("ingests BG3 archive URLs but rejects other games on the same host", () => {
+    expect(shouldIngest("https://game8.co/games/BG3/archives/419608", game8!)).toBe(true);
+    expect(shouldIngest("https://game8.co/games/Genshin-Impact/archives/1", game8!)).toBe(false);
+    // The trailing slash guards against slug-prefix collisions (e.g. a "BG3X" game)
+    // and excludes the bare hub page, which the sitemap does not list anyway.
+    expect(shouldIngest("https://game8.co/games/BG3X/archives/1", game8!)).toBe(false);
+    expect(shouldIngest("https://game8.co/games/BG3", game8!)).toBe(false);
+  });
+});
+
 describe("shouldIngest", () => {
   it("accepts a real article URL on the allowed path", () => {
     expect(shouldIngest("https://bg3.wiki/wiki/Fireball", bg3)).toBe(true);
@@ -68,5 +88,35 @@ describe("request builders", () => {
       html: "<html></html>",
       pageType: "article",
     });
+  });
+});
+
+describe("game8 title cleaning", () => {
+  const game8 = getSource("game8")!;
+  const url = "https://game8.co/games/BG3/archives/417750";
+
+  it("strips the trailing site/game suffix from the <title> fallback", () => {
+    const req = toPageRequest(
+      game8,
+      url,
+      "<html></html>",
+      "List of Feats | Baldur's Gate 3 (BG3)｜Game8",
+    );
+    expect(req.title).toBe("List of Feats");
+  });
+
+  it("leaves a clean title (no suffix) untouched", () => {
+    const req = toPageRequest(game8, url, "<x>", "Barbarian Class: Best Builds and Subclasses");
+    expect(req.title).toBe("Barbarian Class: Best Builds and Subclasses");
+  });
+
+  it("only trims sources that configure a suffix (scoped, not global)", () => {
+    const req = toPageRequest(
+      bg3,
+      "https://bg3.wiki/wiki/X",
+      "<x>",
+      "X | Baldur's Gate 3 (BG3)｜Game8",
+    );
+    expect(req.title).toBe("X | Baldur's Gate 3 (BG3)｜Game8");
   });
 });

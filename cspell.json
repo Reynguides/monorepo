@@ -197,7 +197,11 @@
         "decisioned",
         "absolutized",
         "Reynguides",
-        "EBUSY"
+        "EBUSY",
+        "fextralife",
+        "gamerguides",
+        "game8",
+        "cloudflared"
     ],
     "allowCompoundWords": true
 }

@@ -16,7 +16,9 @@ run as a Node-side producer tool, `apps/reyn-kb-worker/tools/crawl.ts`
    `--limit`.
 6. Crawl politely with `CheerioCrawler` — `maxRequestsPerMinute: 30`, `maxConcurrency: 2`,
    retries, dedup, and a **named, resumable `RequestQueue`** (keyed by source id).
-7. For each page, `POST /v1/kb/pages` with the raw HTML and the source's default `pageType`.
+7. For each page, `POST /v1/kb/pages` with the raw HTML, the source's default `pageType`, and
+   the cleaned `<title>` — a source may set `titleSuffix` (regex) to strip site-name noise
+   from the title (`game8` uses it; `cleanPageTitle` in `sources.ts` is pure + unit-tested).
 
 The worker then indexes each page on demand (`POST /v1/kb/pages/:id/index`).
 
@@ -32,7 +34,8 @@ curl 'http://127.0.0.1:8787/v1/kb/pages?source=bg3-wiki'
 ```
 
 Flags: `--source` (default `bg3-wiki`), `--api` (default `http://127.0.0.1:8787`),
-`--limit` (default 25). `KB_INGEST_KEY` is read from the environment.
+`--limit` (default 25), `--rpm` (default 30), `--concurrency` (default 2).
+`KB_INGEST_KEY` is read from the environment.
 
 ## Design split — pure core vs. wiring shell
 
@@ -56,6 +59,14 @@ symbol). This preserves the Worker's minimal-deps stance
 | id | base | tier | license | sitemap |
 |---|---|---|---|---|
 | `bg3-wiki` | `https://bg3.wiki` | 1 | CC BY-SA 4.0 | `https://bg3.wiki/sitemap.xml` |
+| `fextralife` | `https://baldursgate3.wiki.fextralife.com` | 2 | fan wiki (testing only) | `…/sitemap.xml` (flat urlset) |
+| `gamerguides` | `https://www.gamerguides.com` | 3 | commercial (testing only) | `…/sitemap/1/300` (BG3-dense chunk) |
+| `game8` | `https://game8.co` | 3 | commercial (testing only) | `…/sitemaps/game_1237.xml.gz` (BG3-only per-game) |
+
+`game8`'s sitemap index splits per game, so the catalog points at the single BG3 per-game
+`.gz` (game 1237) rather than the all-games index, and `allowPathPrefixes: ["/games/BG3/"]`
+keeps it BG3-only. game8 leaves `<h1>` empty, so its entry sets `titleSuffix` to strip the
+`<title>` site-name tail (see title cleaning below).
 
 Add a source by appending a `SourceDef` to `SOURCE_CATALOG` in `src/lib/sources.ts` (and a
 test). A JS-rendered source would need Crawlee's `PlaywrightCrawler` instead of
