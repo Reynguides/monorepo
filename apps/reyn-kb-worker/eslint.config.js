@@ -9,6 +9,9 @@ export default tseslint.config(
       "node_modules/**",
       "coverage/**",
       ".wrangler/**",
+      // Local scratch fill/index scripts (git-ignored too); not in the TS project,
+      // so type-aware linting would hard-error on them.
+      "**/*.local.mjs",
       // Config files are themselves untyped; don't TS-aware-lint them.
       "eslint.config.js",
       "vitest.config.ts",

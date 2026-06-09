@@ -23,7 +23,9 @@ export interface Env {
 
   // Vars (wrangler.toml) — provider selectors.
   EMBEDDING_PROVIDER: "workers-ai" | "mock";
-  VECTOR_INDEX: "vectorize" | "mock";
+  // `discard` = write chunks + ledger but hold no vectors (local/demo fills of any
+  // size, no OOM; semantic search returns nothing). See NoopVectorIndexClient.
+  VECTOR_INDEX: "vectorize" | "mock" | "discard";
   OBJECT_STORE: "r2" | "mock";
 
   // Secrets

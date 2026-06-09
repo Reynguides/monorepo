@@ -15,6 +15,10 @@ Vectorize and Workers AI have **no local emulator**. Two options:
   live Cloudflare. The mock vector index models metadata filtering + namespaces so retrieval
   is fully testable offline.
 - **Live dev** — `pnpm exec wrangler dev --remote` talks to real Vectorize + Workers AI.
+- **Local fills / demo (`VECTOR_INDEX=discard`)** — `wrangler.local.toml` selects a vector
+  index that writes chunks + the embedding ledger but holds **no** vectors, so a corpus of any
+  size indexes without the in-memory mock's ~18k-vector OOM; browse, keyword search, and
+  `verify` stay correct (only semantic search is off). This backs the browse-UI demo fill.
 
 ### Mock end-to-end (zero external calls)
 
@@ -78,6 +82,26 @@ pnpm exec wrangler d1 migrations apply reyn_kb --local   # dev
 
 See [crawler](crawler.md): `KB_INGEST_KEY=… pnpm crawl --source bg3-wiki --limit N` against
 `wrangler dev --remote`.
+
+## Internal browse UI demo
+
+`GET /` serves a minimal, read-only browse/verify page ([api](api.md#get----browse-ui-open)) over
+the open read endpoints. To show the team the **locally-filled** KB without deploying anything to
+Cloudflare, serve the local instance and expose it with a Cloudflare quick tunnel:
+
+```bash
+cd apps/reyn-kb-worker
+# 1. Serve the already-filled local D1/R2 (mock embeddings — browse + keyword search are real).
+pnpm exec wrangler dev --config wrangler.local.toml      # → http://127.0.0.1:8787
+# 2. In a second shell, expose it on a temporary public HTTPS URL and share that link.
+cloudflared tunnel --url http://127.0.0.1:8787
+```
+
+Your machine stays the origin — nothing is uploaded to Cloudflare; `cloudflared` only reverse-proxies
+the local port. The link is **ephemeral** (gone when you stop the tunnel) and the reads are open, so
+treat it as a short-lived demo, not a deployment. Semantic search needs live Vectorize + Workers AI
+(`--remote`); under the local mock provider, browse, per-page chunk inspection, and keyword search
+work against real data, which is what verifies the corpus is filled in correctly.
 
 ## Known caveat — Windows test flake
 

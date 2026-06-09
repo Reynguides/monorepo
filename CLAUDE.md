@@ -104,7 +104,7 @@ Headline numbers (as of Phase 11):
 |---|---|---|
 | .NET (`Reyn.sln`) | **193** (4 Infrastructure + 115 Application + 50 ViewModels + 24 UI) | enforced ≥95% / ≥90% |
 | Worker | **110** (21 test files via vitest-pool-workers) | 97.58% / 92.39% (lines/branches) |
-| KB Worker | **170** (33 test files via vitest-pool-workers) | 99.01% / 92.51% (lines/branches) |
+| KB Worker | **184** (36 test files via vitest-pool-workers) | 99.05% / 92.55% (lines/branches) |
 | Lua mod | **30** (3 suites: json + transport + bootstrap) | manual smoke checklist |
 
 ## Cloudflare local-dev

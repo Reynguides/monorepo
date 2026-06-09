@@ -42,12 +42,23 @@ Body: `{ pageId, url, contentType, dataBase64, altText?, width?, height? }`. MIM
 (png/jpeg/webp/gif — **no SVG**). → `200 { imageId, changed }`. `404` unknown page;
 `400 invalid_base64`.
 
+### `GET /v1/kb/sources` — list registered sources (open)
+→ `200 { sources:[{ id, name, baseUrl, tier, license, createdAt }] }`, ordered by tier then id.
+Backs the browse UI's source picker.
+
 ### `GET /v1/kb/pages?source=&limit=&cursor=` — list pages
-→ `200 { items:[…], nextCursor }`. Cursor-paginated by id.
+→ `200 { items:[…], nextCursor }`. Cursor-paginated by id. `source` is **required** (omitting it
+is `400`); discover valid ids via `GET /v1/kb/sources`.
 
 ### `GET /v1/kb/pages/:id` — page detail
 → `200 { id, sourceId, url, canonicalUrl, title, pageType, summary, tags, language,
 lifecycle, version, crawledAt, updatedAt, html, markdown }`. `404` if unknown.
+
+### `GET /v1/kb/pages/:id/chunks` — per-page chunks + embedding status (open)
+→ `200 { pageId, chunks:[{ id, sectionId, ord, headingPath, tokenCount, text, hasEmbedding }] }`,
+ordered by `ord`. `hasEmbedding` is `true` when an `embedding_state` ledger row exists for the
+chunk. An empty `chunks` array means the page was stored but never indexed (vs `404`, which means
+the page id is unknown). This is the chunk-level "filled in correctly" view used by the browse UI.
 
 ### `GET /v1/kb/images/:id` — image bytes
 → `200` raw bytes with the stored `Content-Type`, `X-Content-Type-Options: nosniff`, and a
@@ -74,3 +85,9 @@ ruleEvents, pagesByLifecycle:{…} }`.
 
 ### `GET /v1/health`
 → `200 { ok:true, time }`.
+
+### `GET /` — browse UI (open)
+A single self-contained HTML page (no build step, no framework) for **internal demos**: browse
+sources → pages → per-page chunks, with the live `stats` and `verify` snapshots in the header. It
+is a thin client over the open read endpoints above. Run it for the team via the local tunnel in
+[operations](operations.md#internal-browse-ui-demo). Not a product surface.
