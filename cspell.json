@@ -201,7 +201,14 @@
         "fextralife",
         "gamerguides",
         "game8",
-        "cloudflared"
+        "cloudflared",
+        "OpenRouter",
+        "openrouter",
+        "gemma",
+        "Astarion",
+        "Shar",
+        "noresults",
+        "unparseable"
     ],
     "allowCompoundWords": true
 }

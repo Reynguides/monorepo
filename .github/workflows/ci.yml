@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, feat/knowledge-base]
+    branches: [master, feat/knowledge-base, feat/rag-consumer]
   pull_request:
-    branches: [master, feat/knowledge-base]
+    branches: [master, feat/knowledge-base, feat/rag-consumer]
 
 permissions:
   contents: read
@@ -192,6 +192,62 @@ jobs:
         with:
           name: kb-worker-coverage
           path: apps/reyn-kb-worker/coverage
+          if-no-files-found: warn
+
+  # ─── RAG Worker ────────────────────────────────────────────────────
+  # RAG consumer Worker (ADR-0025): a thin generation layer over the KB
+  # worker's search API. Same strict gates as `worker`. It has NO Cloudflare
+  # resource bindings — retrieval is an HTTP call and the LLM/KB-search seams
+  # are pinned to mock in the vitest config, so the suite never touches the
+  # network or a live model. The eval CLI (`eval/run.ts`) is type-checked +
+  # linted here but coverage-excluded (it needs a live worker); its metrics
+  # live in src/lib/eval-metrics.ts and are gated.
+  rag-worker:
+    name: RAG Worker (typecheck + lint + test:coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/reyn-rag-worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        working-directory: .
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Test (with coverage)
+        # The vitest config enforces 95/95/95/90 thresholds; this step fails
+        # if any threshold is missed.
+        run: pnpm test:coverage
+
+      - name: Upload RAG worker coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-worker-coverage
+          path: apps/reyn-rag-worker/coverage
           if-no-files-found: warn
 
   # ─── Lua mod ───────────────────────────────────────────────────────

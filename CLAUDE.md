@@ -79,16 +79,21 @@ Every locked decision lives as a single ADR. ADRs are immutable once accepted �
 - [ADR-0023 — Hybrid RRF retrieval (search contract, no LLM)](docs/adr/0023-hybrid-rrf-retrieval.md)
 - [ADR-0024 — Adopt Crawlee for the ingestion crawler (Node producer, outside the bundle)](docs/adr/0024-adopt-crawlee-ingestion-crawler.md)
 
+**RAG consumer (`apps/reyn-rag-worker`)** — ADR-0025. The deferred LLM answer-generation layer, built as a thin consumer of the KB search API (mock-default; OpenRouter-via-AI-Gateway opt-in).
+
+- [ADR-0025 — RAG answer generation as a separate consumer Worker over the KB search API](docs/adr/0025-rag-consumer-worker-over-kb-search.md)
+
 ## Quality gates (enforced in CI)
 
-`.github/workflows/ci.yml` runs six jobs on every push + PR (to `master` and the `feat/knowledge-base` integration branch):
+`.github/workflows/ci.yml` runs seven jobs on every push + PR (to `master`, the `feat/knowledge-base` integration branch, and `feat/rag-consumer`):
 
 1. **`dotnet`** (windows-latest) — restore → build `-warnaserror` → test with coverlet → ReportGenerator → **≥95% line / ≥90% branch** floor or the job fails.
 2. **`worker`** (ubuntu-latest) — `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:coverage` — vitest's own thresholds (95/95/95/90) gate the build.
 3. **`kb-worker`** (ubuntu-latest) — same gates as `worker`, working-directory `apps/reyn-kb-worker`. The Crawlee crawler (`tools/crawl.ts`) is type-checked + linted but coverage-excluded (it needs live network). See [`docs/kb/`](docs/kb/architecture.md).
-4. **`lua`** (ubuntu-latest) — `apt install lua5.1` + `lua5.1 apps/reyn-bg3-mod/tests/lua/run.lua` (30 tests).
-5. **`docs`** (ubuntu-latest) — lychee markdown link check + cspell (covers `docs/kb/**` via the recursive `docs/**/*.md` glob).
-6. **`secrets-scan`** (ubuntu-latest) — gitleaks against working tree + history.
+4. **`rag-worker`** (ubuntu-latest) — same gates as `worker`, working-directory `apps/reyn-rag-worker`. The RAG consumer over the KB search API (ADR-0025); no resource bindings, seams pinned to mock (zero external calls). The eval CLI (`eval/run.ts`) is type-checked + linted but coverage-excluded. See [`docs/rag/`](docs/rag/architecture.md).
+5. **`lua`** (ubuntu-latest) — `apt install lua5.1` + `lua5.1 apps/reyn-bg3-mod/tests/lua/run.lua` (30 tests).
+6. **`docs`** (ubuntu-latest) — lychee markdown link check + cspell (covers `docs/kb/**` and `docs/rag/**` via the recursive `docs/**/*.md` glob).
+7. **`secrets-scan`** (ubuntu-latest) — gitleaks against working tree + history.
 
 `.github/workflows/deploy-worker.yml` is `workflow_dispatch`-only per [ADR-0010](docs/adr/0010-ci-cd-github-actions.md). It applies migrations against the remote Accounts D1 + shared user-data D1, pushes the SESSION_PEPPER secret, then runs `wrangler deploy`. Requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` + `SESSION_PEPPER` in the GitHub environment.
 
@@ -186,6 +191,7 @@ If you're picking this up to add a feature or roadmap item:
 - **BG3 event catalog (source of truth)**: `packages/event-catalog/src/index.ts`
 - **Lua mod**: `apps/reyn-bg3-mod/`
 - **Knowledge Base worker**: `apps/reyn-kb-worker/` — docs at `docs/kb/` (architecture, api, data-model, rules, retrieval, crawler, operations)
+- **RAG consumer worker**: `apps/reyn-rag-worker/` — `POST /v1/rag/query` over KB search; docs at `docs/rag/` (architecture, api); design spec `docs/superpowers/specs/2026-06-11-rag-consumer-design.md`; [ADR-0025](docs/adr/0025-rag-consumer-worker-over-kb-search.md)
 - **KB source catalog (crawler)**: `apps/reyn-kb-worker/src/lib/sources.ts`
 - **Roadmap (post-productionization)**: `docs/roadmap.md`
 - **Most-recent session handoff**: `.remember/remember.md`
