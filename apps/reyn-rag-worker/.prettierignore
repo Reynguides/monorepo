@@ -1,0 +1,6 @@
+node_modules/
+dist/
+coverage/
+.wrangler/
+eval/last-report.json
+pnpm-lock.yaml

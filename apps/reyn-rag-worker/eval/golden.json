@@ -1,0 +1,65 @@
+[
+  {
+    "id": "bg3-001",
+    "question": "What is Shadowheart's background and class?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Shadowheart", "https://bg3.wiki/wiki/Shar"]
+  },
+  {
+    "id": "bg3-002",
+    "question": "How do I recruit Karlach as a companion?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Karlach", "https://bg3.wiki/wiki/The_Risen_Road"]
+  },
+  {
+    "id": "bg3-003",
+    "question": "What are the stats and abilities of the Owlbear?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Owlbear", "https://bg3.wiki/wiki/Owlbear_Cub"]
+  },
+  {
+    "id": "bg3-004",
+    "question": "What spells does Gale start with and what is his class?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Gale", "https://bg3.wiki/wiki/Wizard"]
+  },
+  {
+    "id": "bg3-005",
+    "question": "How does the Moonrise Towers quest progress?",
+    "expectedUrls": [
+      "https://bg3.wiki/wiki/Moonrise_Towers",
+      "https://bg3.wiki/wiki/Assault_on_Moonrise_Towers"
+    ]
+  },
+  {
+    "id": "bg3-006",
+    "question": "What is the Mind Flayer parasite and how does it affect the player?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Mind_Flayer", "https://bg3.wiki/wiki/Illithid_Parasite"]
+  },
+  {
+    "id": "bg3-007",
+    "question": "How do I complete the Save Arabella quest in the Druid Grove?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Save_Arabella", "https://bg3.wiki/wiki/Druid_Grove"]
+  },
+  {
+    "id": "bg3-008",
+    "question": "What are the mechanics of the Concentration spell system?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Concentration", "https://bg3.wiki/wiki/Conditions"]
+  },
+  {
+    "id": "bg3-009",
+    "question": "How do I open the Gilded Chest in the Dank Crypt?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Dank_Crypt", "https://bg3.wiki/wiki/Ancient_Sigil_Ring"]
+  },
+  {
+    "id": "bg3-010",
+    "question": "What are the advantages and disadvantages of being a Dark Urge origin?",
+    "expectedUrls": ["https://bg3.wiki/wiki/The_Dark_Urge", "https://bg3.wiki/wiki/Origins"]
+  },
+  {
+    "id": "bg3-011",
+    "question": "How does the Honour Mode difficulty work and what changes does it make?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Honour_Mode", "https://bg3.wiki/wiki/Difficulty"]
+  },
+  {
+    "id": "bg3-012",
+    "question": "What is Astarion's backstory and what are his companion quest objectives?",
+    "expectedUrls": ["https://bg3.wiki/wiki/Astarion", "https://bg3.wiki/wiki/The_Pale_Elf"]
+  }
+]

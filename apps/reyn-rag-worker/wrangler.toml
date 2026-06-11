@@ -1,0 +1,30 @@
+name = "reyn-rag-worker"
+main = "src/index.ts"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# This worker has NO Cloudflare resource bindings. It is a thin RAG "consumer":
+# retrieval is delegated to the KB worker's POST /v1/kb/search over HTTP, and
+# generation goes to OpenRouter via the Cloudflare AI Gateway (opt-in). All it
+# needs are the vars below + secrets — no D1/R2/Vectorize/AI bindings. See
+# docs/rag/architecture.md and the design spec.
+
+[vars]
+# KB_SEARCH selects the retrieval client: "http" calls the live KB worker at
+# KB_BASE_URL; "mock" returns canned results (tests pin this to "mock").
+KB_SEARCH = "http"
+# KB_BASE_URL is the deployed KB worker origin. Set per environment before
+# deploy (placeholder here; this run does not deploy).
+KB_BASE_URL = "https://reyn-kb-worker.example.workers.dev"
+
+# LLM_PROVIDER selects generation: "mock" (deterministic, default until live is
+# enabled) or "openrouter" (live, via the AI Gateway). Live is owner-triggered.
+LLM_PROVIDER = "mock"
+# AI Gateway routing + model for the openrouter path (unused while mock).
+AI_GATEWAY_ACCOUNT_ID = ""
+AI_GATEWAY_NAME = ""
+OPENROUTER_MODEL = "google/gemma-4-31b-it:free"
+
+# Required secret only when LLM_PROVIDER=openrouter (set with
+# `wrangler secret put OPENROUTER_API_KEY`):
+# - OPENROUTER_API_KEY : OpenRouter API key, billed against your prepaid credits.
