@@ -8,8 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 binding = "KB_DB"
 database_name = "reyn_kb"
 migrations_dir = "../../migrations/kb-d1"
-# TODO: create reyn_kb in the active Cloudflare account during the P10 deploy; placeholder for local/test.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "424e50a3-d573-41ac-bd7c-c028c93278bf"
 
 # R2 object store for raw crawled HTML, normalised markdown, and images.
 [[r2_buckets]]
