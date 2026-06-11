@@ -20,6 +20,19 @@ LLM answer generation is out of scope. Follow-ups:
   types pre-index.
 - **Scheduled re-crawl + freshness** — a cron-triggered crawl so `crawled_at`
   /freshness decay reflects live wiki edits.
+- **Per-game KB instances** — the long-term design is one KB instance per
+  game, but game #1 (BG3) deliberately ships with **generic** resource names
+  to avoid churn while only one game exists. When game #2 arrives,
+  parameterize *all* of: the 4 names in `apps/reyn-kb-worker/wrangler.toml`
+  (`name`, D1 `database_name = reyn_kb`, R2 `bucket_name = reyn-kb-content`,
+  Vectorize `index_name = reyn-kb-bge-base`); the hardcoded `reyn_kb` +
+  `reyn-kb-bge-base` (and its 6 metadata-index creates) in
+  `.github/workflows/deploy-kb-worker.yml` — make these a `game`-slug input
+  (→ `reyn-kb-<game>` / `reyn-kb-<game>-bge`); and the one-time
+  `wrangler d1 create` / `r2 bucket create` bootstrap in
+  `docs/kb/operations.md`. Also pick the isolation level: a separate
+  Vectorize **index** per game (clean "own instance" story) vs. one index
+  partitioned by the existing `source_id`/namespace metadata.
 
 ## Near-term (1–2 sessions)
 
