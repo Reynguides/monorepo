@@ -39,6 +39,10 @@ cd apps/reyn-cloud-worker
 pnpm install                                  # from root, once
 pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:coverage
 
+# Knowledge Base worker (BG3-only KB + hybrid search; no LLM)
+cd apps/reyn-kb-worker
+pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:coverage
+
 # BG3 Lua mod
 lua apps/reyn-bg3-mod/tests/lua/run.lua
 
@@ -64,17 +68,31 @@ Every locked decision lives as a single ADR. ADRs are immutable once accepted �
 - [ADR-0009 — Strict TypeScript and strict .NET quality gates enforced in CI](docs/adr/0009-strict-ts-and-net-quality-gates.md)
 - [ADR-0010 — CI/CD on GitHub Actions; Worker deploys are `workflow_dispatch` only](docs/adr/0010-ci-cd-github-actions.md)
 
+**Knowledge Base (`apps/reyn-kb-worker`)** — ADRs 0017–0024. (0011–0016 are intentionally reserved for an independent PoC branch to avoid renumbering collisions if branches ever merge.)
+
+- [ADR-0017 — New KB Worker; platform-first + minimal deps; D1 FTS5](docs/adr/0017-knowledge-base-worker-platform-first.md)
+- [ADR-0018 — HTMLRewriter content extraction behind a seam](docs/adr/0018-htmlrewriter-content-extraction.md)
+- [ADR-0019 — KB data model + relationship taxonomy](docs/adr/0019-kb-data-model-and-relationship-taxonomy.md)
+- [ADR-0020 — Table-driven rules engine](docs/adr/0020-table-driven-rules-engine.md)
+- [ADR-0021 — `chars/4` token estimate](docs/adr/0021-chars-over-four-tokenization.md)
+- [ADR-0022 — Vectorize metadata indexes + namespaces; supersede-in-place](docs/adr/0022-vectorize-metadata-namespaces-supersede.md)
+- [ADR-0023 — Hybrid RRF retrieval (search contract, no LLM)](docs/adr/0023-hybrid-rrf-retrieval.md)
+- [ADR-0024 — Adopt Crawlee for the ingestion crawler (Node producer, outside the bundle)](docs/adr/0024-adopt-crawlee-ingestion-crawler.md)
+
 ## Quality gates (enforced in CI)
 
-`.github/workflows/ci.yml` runs five jobs on every push + PR:
+`.github/workflows/ci.yml` runs six jobs on every push + PR (to `master` and the `feat/knowledge-base` integration branch):
 
 1. **`dotnet`** (windows-latest) — restore → build `-warnaserror` → test with coverlet → ReportGenerator → **≥95% line / ≥90% branch** floor or the job fails.
 2. **`worker`** (ubuntu-latest) — `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:coverage` — vitest's own thresholds (95/95/95/90) gate the build.
-3. **`lua`** (ubuntu-latest) — `apt install lua5.1` + `lua5.1 apps/reyn-bg3-mod/tests/lua/run.lua` (30 tests).
-4. **`docs`** (ubuntu-latest) — lychee markdown link check + cspell.
-5. **`secrets-scan`** (ubuntu-latest) — gitleaks against working tree + history.
+3. **`kb-worker`** (ubuntu-latest) — same gates as `worker`, working-directory `apps/reyn-kb-worker`. The Crawlee crawler (`tools/crawl.ts`) is type-checked + linted but coverage-excluded (it needs live network). See [`docs/kb/`](docs/kb/architecture.md).
+4. **`lua`** (ubuntu-latest) — `apt install lua5.1` + `lua5.1 apps/reyn-bg3-mod/tests/lua/run.lua` (30 tests).
+5. **`docs`** (ubuntu-latest) — lychee markdown link check + cspell (covers `docs/kb/**` via the recursive `docs/**/*.md` glob).
+6. **`secrets-scan`** (ubuntu-latest) — gitleaks against working tree + history.
 
 `.github/workflows/deploy-worker.yml` is `workflow_dispatch`-only per [ADR-0010](docs/adr/0010-ci-cd-github-actions.md). It applies migrations against the remote Accounts D1 + shared user-data D1, pushes the SESSION_PEPPER secret, then runs `wrangler deploy`. Requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` + `SESSION_PEPPER` in the GitHub environment.
+
+`.github/workflows/deploy-kb-worker.yml` is also `workflow_dispatch`-only. It applies `kb-d1` migrations `--remote`, **creates the Vectorize index + 6 metadata indexes before first ingest** (they are not retroactive), pushes `KB_INGEST_KEY`, then `wrangler deploy`s `apps/reyn-kb-worker`. Requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` + `KB_INGEST_KEY`. The one-time D1/R2 bootstrap is in [`docs/kb/operations.md`](docs/kb/operations.md).
 
 ## Testing strategy
 
@@ -86,6 +104,7 @@ Headline numbers (as of Phase 11):
 |---|---|---|
 | .NET (`Reyn.sln`) | **193** (4 Infrastructure + 115 Application + 50 ViewModels + 24 UI) | enforced ≥95% / ≥90% |
 | Worker | **110** (21 test files via vitest-pool-workers) | 97.58% / 92.39% (lines/branches) |
+| KB Worker | **187** (36 test files via vitest-pool-workers) | 99.18% / 92.74% (lines/branches) |
 | Lua mod | **30** (3 suites: json + transport + bootstrap) | manual smoke checklist |
 
 ## Cloudflare local-dev
@@ -166,5 +185,7 @@ If you're picking this up to add a feature or roadmap item:
 - **Operations runbook**: `docs/operations/runbook.md`
 - **BG3 event catalog (source of truth)**: `packages/event-catalog/src/index.ts`
 - **Lua mod**: `apps/reyn-bg3-mod/`
+- **Knowledge Base worker**: `apps/reyn-kb-worker/` — docs at `docs/kb/` (architecture, api, data-model, rules, retrieval, crawler, operations)
+- **KB source catalog (crawler)**: `apps/reyn-kb-worker/src/lib/sources.ts`
 - **Roadmap (post-productionization)**: `docs/roadmap.md`
 - **Most-recent session handoff**: `.remember/remember.md`

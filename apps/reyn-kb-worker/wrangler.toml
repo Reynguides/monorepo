@@ -1,0 +1,37 @@
+name = "reyn-kb-worker"
+main = "src/index.ts"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Knowledge-base D1: pages / sections / chunks / relationships / rules / embedding ledger.
+[[d1_databases]]
+binding = "KB_DB"
+database_name = "reyn_kb"
+migrations_dir = "../../migrations/kb-d1"
+database_id = "424e50a3-d573-41ac-bd7c-c028c93278bf"
+
+# R2 object store for raw crawled HTML, normalised markdown, and images.
+[[r2_buckets]]
+binding = "KB_BUCKET"
+bucket_name = "reyn-kb-content"
+
+# Vectorize index for chunk embeddings (bge-base-en-v1.5 -> 768 dims, cosine).
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "reyn-kb-bge-base"
+
+# Workers AI binding -- used for embeddings under EMBEDDING_PROVIDER=workers-ai.
+[ai]
+binding = "AI"
+
+[vars]
+# Provider selectors. EMBEDDING_PROVIDER / VECTOR_INDEX select LIVE Cloudflare
+# infra (Workers AI, Vectorize); OBJECT_STORE="r2" uses R2 (local emulator in
+# tests). The vitest config overrides the selectors for tests so no live
+# bindings are required in CI. Deploy is workflow_dispatch-only (ADR-0010).
+EMBEDDING_PROVIDER = "workers-ai"
+VECTOR_INDEX = "vectorize"
+OBJECT_STORE = "r2"
+
+# Required secret (set with `wrangler secret put <NAME>`):
+# - KB_INGEST_KEY : shared secret authorising write/ingest requests (ADR-0017).

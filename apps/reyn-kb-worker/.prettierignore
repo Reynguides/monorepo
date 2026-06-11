@@ -1,0 +1,12 @@
+dist/
+node_modules/
+coverage/
+.wrangler/
+
+# Local-only artifacts present in the working tree but git-ignored (absent on a
+# clean CI checkout): Crawlee request-queue/KV storage and the VS workspace dir.
+storage/
+.vs/
+
+# Local scratch fill/index/seed scripts (git-ignored too)
+*.local.*

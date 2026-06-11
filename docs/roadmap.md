@@ -3,6 +3,37 @@
 Phase 11 is the final phase of the productionization plan — every item
 in this list is **post-productionization** work.
 
+## Knowledge Base (`apps/reyn-kb-worker`)
+
+The BG3 Knowledge Base — a structured KB engine with a typed relationship
+graph, an explicit rules layer, and hybrid (semantic + keyword + filtered +
+relationship-aware) search — was built on the `feat/knowledge-base` branch
+(ADRs 0017–0024, docs at `docs/kb/`). It deliberately stops at **retrieval**;
+LLM answer generation is out of scope. Follow-ups:
+
+- **Answer layer (RAG)** — a *consumer* of `POST /v1/kb/search`, not part of
+  this worker. The search response is already the citation-ready contract.
+- **More sources** — extend `SOURCE_CATALOG` (`src/lib/sources.ts`) beyond
+  `bg3-wiki`; a JS-rendered source needs Crawlee's `PlaywrightCrawler`.
+- **Richer `page_type` classification** — the crawler ingests everything as
+  `article`; a per-source classifier (or a normalize rule) could set finer
+  types pre-index.
+- **Scheduled re-crawl + freshness** — a cron-triggered crawl so `crawled_at`
+  /freshness decay reflects live wiki edits.
+- **Per-game KB instances** — the long-term design is one KB instance per
+  game, but game #1 (BG3) deliberately ships with **generic** resource names
+  to avoid churn while only one game exists. When game #2 arrives,
+  parameterize *all* of: the 4 names in `apps/reyn-kb-worker/wrangler.toml`
+  (`name`, D1 `database_name = reyn_kb`, R2 `bucket_name = reyn-kb-content`,
+  Vectorize `index_name = reyn-kb-bge-base`); the hardcoded `reyn_kb` +
+  `reyn-kb-bge-base` (and its 6 metadata-index creates) in
+  `.github/workflows/deploy-kb-worker.yml` — make these a `game`-slug input
+  (→ `reyn-kb-<game>` / `reyn-kb-<game>-bge`); and the one-time
+  `wrangler d1 create` / `r2 bucket create` bootstrap in
+  `docs/kb/operations.md`. Also pick the isolation level: a separate
+  Vectorize **index** per game (clean "own instance" story) vs. one index
+  partitioned by the existing `source_id`/namespace metadata.
+
 ## Near-term (1–2 sessions)
 
 - **Catalog codegen** — replace the three-way hand-mirror (TS + C# +
