@@ -62,6 +62,26 @@ describe("cleanExtracted — pure logic", () => {
     });
     expect(texts(out)).toEqual(["A normal paragraph about Gale."]);
   });
+
+  it("drops a whole section (and its subsections) by heading, anywhere in the doc", () => {
+    const input = extracted(
+      [
+        block("promo line", "What can you do as a free member?"),
+        block("tool blurb", "What can you do as a free member? > Game Tools"),
+        block("real spell text", "Overview"),
+      ],
+      [
+        section("What can you do as a free member?", 0),
+        section("Game Tools", 1, "What can you do as a free member? > Game Tools"),
+        section("Overview", 2),
+      ],
+    );
+    const out = cleanExtracted(input, {
+      dropSectionsByHeading: ["What can you do as a free member?"],
+    });
+    expect(texts(out)).toEqual(["real spell text"]);
+    expect(out.sections.map((s) => s.heading)).toEqual(["Overview"]);
+  });
 });
 
 describe("cleanExtracted — real per-source catalog configs", () => {
@@ -109,13 +129,22 @@ describe("cleanExtracted — real per-source catalog configs", () => {
             "What can you do as a free member? > Game Tools",
           ),
           block(
+            "Become a paid member for full game tools.",
+            "What can you do as a free member? > Game Tools",
+          ),
+          block(
             "★ All Updates for Patch 5☆ Beginner Guides for All Starter Players★ Simple Character Creation Guide",
             "Promo",
           ),
           block("Vengeance Paladins gain access to...", "Overview"),
           block("see the related guides", "Baldur's Gate 3 Related Guides"),
         ],
-        [section("Overview", 0), section("Baldur's Gate 3 Related Guides", 1)],
+        [
+          section("What can you do as a free member?", 0),
+          section("Game Tools", 1, "What can you do as a free member? > Game Tools"),
+          section("Overview", 2),
+          section("Baldur's Gate 3 Related Guides", 3),
+        ],
       ),
       clean,
     );

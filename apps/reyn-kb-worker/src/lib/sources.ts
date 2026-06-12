@@ -14,6 +14,9 @@ export interface SourceCleanConfig {
   /** At the first heading segment CONTAINING one of these (case-insensitive), drop that
    *  section and every block/section after it. */
   truncateAfterHeadings?: readonly string[];
+  /** Drop every block/section whose heading path contains one of these (case-insensitive),
+   *  wherever it appears — for a junk section that is NOT at the tail (e.g. a top promo). */
+  dropSectionsByHeading?: readonly string[];
 }
 
 export interface SourceDef {
@@ -117,6 +120,9 @@ export const SOURCE_CATALOG: readonly SourceDef[] = [
         /^Want more information\?Learn more$/i,
         /Beginner Guides for All Starter Players/,
       ],
+      // The "What can you do as a free member?" upsell section (incl. its "Game Tools"
+      // subsection) sits at the TOP, before article content — drop the whole section.
+      dropSectionsByHeading: ["What can you do as a free member?"],
       truncateAfterHeadings: ["Related Guides"],
     },
   },
