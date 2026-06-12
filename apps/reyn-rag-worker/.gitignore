@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 .wrangler/
+.dev.vars
 eval/last-report.json
 *.local.mjs
 *.local.json

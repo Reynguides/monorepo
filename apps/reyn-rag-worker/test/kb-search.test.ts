@@ -135,9 +135,16 @@ describe("HttpKbSearchClient", () => {
     await expect(makeClient(fetcher).search({ query: "q" })).rejects.toBeInstanceOf(KbSearchError);
   });
 
-  it("uses the global fetch when no fetcher is supplied", () => {
-    expect(new HttpKbSearchClient({ baseUrl: "https://kb.example.dev" })).toBeInstanceOf(
-      HttpKbSearchClient,
-    );
+  it("uses the global fetch (correctly bound) when no fetcher is supplied", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(oneResultBody));
+    try {
+      const results = await new HttpKbSearchClient({ baseUrl: "https://kb.example.dev" }).search({
+        query: "q",
+      });
+      expect(spy).toHaveBeenCalledWith("https://kb.example.dev/v1/kb/search", expect.anything());
+      expect(results).toHaveLength(1);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

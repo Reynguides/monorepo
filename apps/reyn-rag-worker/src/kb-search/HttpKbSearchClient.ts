@@ -26,7 +26,10 @@ export class HttpKbSearchClient implements IKbSearchClient {
 
   constructor(options: HttpKbSearchClientOptions) {
     this.url = `${options.baseUrl.replace(/\/+$/, "")}/v1/kb/search`;
-    this.fetcher = options.fetcher ?? fetch;
+    // Wrap the global fetch rather than storing it bare: calling a stored
+    // `fetch` as `this.fetcher(...)` invokes it with the wrong `this` and
+    // workerd throws "Illegal invocation". The arrow keeps fetch's global this.
+    this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
   }
 
   public async search(req: KbSearchRequest): Promise<KbSearchResult[]> {

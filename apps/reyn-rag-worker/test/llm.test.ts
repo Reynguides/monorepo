@@ -152,13 +152,21 @@ describe("OpenRouterLlmProvider", () => {
     await expect(makeProvider(fetcher).generate({ prompt: "q" })).rejects.toBeInstanceOf(LlmError);
   });
 
-  it("uses the global fetch when no fetcher is supplied", () => {
-    const p = new OpenRouterLlmProvider({
-      apiKey: "k",
-      accountId: "a",
-      gatewayName: "g",
-      model: "m",
-    });
-    expect(p).toBeInstanceOf(OpenRouterLlmProvider);
+  it("uses the global fetch (correctly bound) when no fetcher is supplied", async () => {
+    const spy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ choices: [{ message: { content: "ok" } }] }));
+    try {
+      const out = await new OpenRouterLlmProvider({
+        apiKey: "k",
+        accountId: "a",
+        gatewayName: "g",
+        model: "m",
+      }).generate({ prompt: "q" });
+      expect(out).toBe("ok");
+      expect(spy).toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

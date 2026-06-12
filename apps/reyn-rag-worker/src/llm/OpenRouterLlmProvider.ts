@@ -31,7 +31,10 @@ export class OpenRouterLlmProvider implements ILlmProvider {
     this.apiKey = options.apiKey;
     this.model = options.model;
     this.url = `https://gateway.ai.cloudflare.com/v1/${options.accountId}/${options.gatewayName}/openrouter/v1/chat/completions`;
-    this.fetcher = options.fetcher ?? fetch;
+    // Wrap the global fetch rather than storing it bare: calling a stored
+    // `fetch` as `this.fetcher(...)` invokes it with the wrong `this` and
+    // workerd throws "Illegal invocation". The arrow keeps fetch's global this.
+    this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
   }
 
   public async generate(input: LlmInput): Promise<string> {
