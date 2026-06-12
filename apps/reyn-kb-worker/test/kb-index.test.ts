@@ -128,4 +128,39 @@ describe("POST /v1/kb/pages/:id/index", () => {
     expect(body.chunks).toBe(0);
     expect((await getPageById(env.KB_DB, pageId))!.r2_md_key).not.toBeNull();
   });
+
+  it("applies the source's clean config end-to-end (drops bg3 'Ad placeholder' chunk-zero)", async () => {
+    // Source id must be a real catalog id ("bg3-wiki") for the clean config to apply.
+    await upsertSource(env.KB_DB, {
+      id: "bg3-wiki",
+      name: "BG3 Wiki",
+      baseUrl: "https://bg3.wiki",
+      tier: 1,
+      createdAt: Date.now(),
+    });
+    const html =
+      "<html><head><title>Astarion</title></head><body>" +
+      "<p>Ad placeholder</p>" +
+      "<h1>Astarion</h1><p>Astarion is a vampire spawn rogue companion.</p>" +
+      "</body></html>";
+    const stored = await readJson<{ pageId: string }>(
+      await call("/v1/kb/pages", {
+        method: "POST",
+        headers: AUTH,
+        jsonBody: {
+          sourceId: "bg3-wiki",
+          url: "https://bg3.wiki/wiki/Astarion",
+          html,
+          pageType: "article",
+        },
+      }),
+    );
+    await indexPage(stored.pageId);
+
+    const chunkText = (await listChunksByPageId(env.KB_DB, stored.pageId))
+      .map((c) => c.text)
+      .join("\n");
+    expect(chunkText).not.toContain("Ad placeholder");
+    expect(chunkText).toContain("vampire spawn rogue");
+  });
 });
