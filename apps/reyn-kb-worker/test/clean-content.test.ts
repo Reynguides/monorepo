@@ -47,6 +47,30 @@ describe("cleanExtracted — pure logic", () => {
     expect(out.sections.map((s) => s.heading)).toEqual(["Spells"]);
   });
 
+  it("truncation also removes Related Guides SUBSECTIONS (e.g. 'Related Guides > All Armor by Type')", () => {
+    const input = extracted(
+      [
+        block("real spell content", "Overview"),
+        block("related guide links", "Baldur's Gate 3 Related Guides"),
+        block("armor type links", "Baldur's Gate 3 Related Guides > All Armor by Type"),
+        block("chest armor links", "Baldur's Gate 3 Related Guides > All Chest Armor"),
+        block("comments junk", "Comments"),
+      ],
+      [
+        section("Overview", 0),
+        section("Baldur's Gate 3 Related Guides", 1),
+        section("All Armor by Type", 2, "Baldur's Gate 3 Related Guides > All Armor by Type"),
+        section("All Chest Armor", 3, "Baldur's Gate 3 Related Guides > All Chest Armor"),
+        section("Comments", 4),
+      ],
+    );
+    const out = cleanExtracted(input, { truncateAfterHeadings: ["Related Guides"] });
+    // Everything from "Related Guides" onward — incl. its subsections and any later
+    // section — is gone; only content BEFORE it survives.
+    expect(texts(out)).toEqual(["real spell content"]);
+    expect(out.sections.map((s) => s.heading)).toEqual(["Overview"]);
+  });
+
   it("does not truncate when no heading matches", () => {
     const input = extracted([block("a", "Spells")], [section("Spells", 0)]);
     const out = cleanExtracted(input, { truncateAfterHeadings: ["Related Guides"] });
