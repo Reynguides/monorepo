@@ -7,6 +7,18 @@
  */
 import type { StorePageRequest, StoreSourceRequest } from "../schemas/kb.ts";
 
+/** Optional per-source content cleaning applied after extraction (ADR-0018 seam). */
+export interface SourceCleanConfig {
+  /** A block whose collapsed text matches any pattern is dropped (chunk-zero chrome). */
+  dropBlockPatterns?: readonly RegExp[];
+  /** At the first heading segment CONTAINING one of these (case-insensitive), drop that
+   *  section and every block/section after it. */
+  truncateAfterHeadings?: readonly string[];
+  /** Drop every block/section whose heading path contains one of these (case-insensitive),
+   *  wherever it appears — for a junk section that is NOT at the tail (e.g. a top promo). */
+  dropSectionsByHeading?: readonly string[];
+}
+
 export interface SourceDef {
   id: string;
   name: string;
@@ -20,6 +32,8 @@ export interface SourceDef {
   defaultPageType: NonNullable<StorePageRequest["pageType"]>;
   /** Optional regex stripped from the crawled <title> to drop site-name noise. */
   titleSuffix?: RegExp;
+  /** Optional source-specific chunk-cleaning (drop boilerplate blocks / truncate trailers). */
+  clean?: SourceCleanConfig;
 }
 
 /** MediaWiki namespaces that are never article content (meta/discussion/files). */
@@ -50,6 +64,8 @@ export const SOURCE_CATALOG: readonly SourceDef[] = [
     license: "CC BY-SA 4.0",
     allowPathPrefixes: ["/wiki/"],
     defaultPageType: "article",
+    // QA: an "Ad placeholder" block lands as chunk zero on bg3.wiki articles.
+    clean: { dropBlockPatterns: [/^Ad placeholder$/i] },
   },
   {
     id: "fextralife",
@@ -61,6 +77,13 @@ export const SOURCE_CATALOG: readonly SourceDef[] = [
     license: "(c) Fextralife — fan wiki; crawled for local testing only",
     allowPathPrefixes: [],
     defaultPageType: "article",
+    // QA: the site nav lands as ~14 separate chunk-zero blocks (headingPath:null), each a
+    // single nav label. Drop each by exact whole-text match (anchored — never hits prose).
+    clean: {
+      dropBlockPatterns: [
+        /^(Home|Wikis|News|Reviews|Guides|Forum|Sign In Now|Recent Changes|New page|File Manager|Members|Page Manager|Settings|Create Wiki)$/,
+      ],
+    },
   },
   {
     id: "gamerguides",
@@ -90,6 +113,18 @@ export const SOURCE_CATALOG: readonly SourceDef[] = [
     // carries a " | Baldur's Gate 3 (BG3)｜Game8" site-name tail. Strip it (the `.`
     // matches whichever apostrophe glyph the page uses) for clean, distinct titles.
     titleSuffix: /\s*\|\s*Baldur.s Gate 3.*$/u,
+    // QA: a "Want more information?Learn more" promo block + a "★ … Beginner Guides …" promo
+    // blob are chunk-zero junk; everything after the "… Related Guides" heading is link spam.
+    clean: {
+      dropBlockPatterns: [
+        /^Want more information\?Learn more$/i,
+        /Beginner Guides for All Starter Players/,
+      ],
+      // The "What can you do as a free member?" upsell section (incl. its "Game Tools"
+      // subsection) sits at the TOP, before article content — drop the whole section.
+      dropSectionsByHeading: ["What can you do as a free member?"],
+      truncateAfterHeadings: ["Related Guides"],
+    },
   },
 ];
 

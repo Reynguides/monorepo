@@ -27,6 +27,8 @@ import { chunkBlocks, type Chunk } from "../../lib/chunking.ts";
 import { approxTokenCount } from "../../lib/tokens.ts";
 import { logEvent } from "../../lib/log.ts";
 import { buildPageRelationships } from "./build-relationships.ts";
+import { getSource } from "../../lib/sources.ts";
+import { cleanExtracted } from "../../lib/clean-content.ts";
 
 const CHUNK_MAX_CHARS = 1200;
 const CHUNK_OVERLAP_CHARS = 150;
@@ -172,7 +174,11 @@ export const indexPageHandler: Handler<{ Bindings: Env }> = async (c) => {
   const db = c.env.KB_DB;
 
   const extracted = await extractContent(inputs.html);
-  const chunks = chunkBlocks(extracted.blocks, {
+  // Source-specific boilerplate removal (ADR-0018 seam): drops chunk-zero chrome
+  // and trailing link-spam sections per the source's `clean` config. No-op for
+  // sources without one. Feeds chunks, markdown, sections, and relationships.
+  const cleaned = cleanExtracted(extracted, getSource(page.source_id)?.clean);
+  const chunks = chunkBlocks(cleaned.blocks, {
     maxChars: CHUNK_MAX_CHARS,
     overlapChars: CHUNK_OVERLAP_CHARS,
   });
@@ -181,12 +187,12 @@ export const indexPageHandler: Handler<{ Bindings: Env }> = async (c) => {
   const removed = await supersede(db, vector, page.id);
 
   const mdKey = `pages/${page.id}/clean.md`;
-  await store.put(mdKey, buildMarkdown(extracted), { contentType: "text/markdown; charset=utf-8" });
+  await store.put(mdKey, buildMarkdown(cleaned), { contentType: "text/markdown; charset=utf-8" });
   await setPageMdKey(db, page.id, mdKey);
   await replaceSectionsForPage(
     db,
     page.id,
-    extracted.sections.map((s) => ({
+    cleaned.sections.map((s) => ({
       id: `${page.id}:sec:${s.ord}`,
       ord: s.ord,
       level: s.level,
@@ -199,7 +205,7 @@ export const indexPageHandler: Handler<{ Bindings: Env }> = async (c) => {
   if (chunks.length > 0) {
     await persistChunks(c, vector, inputs, chunks);
   }
-  await buildPageRelationships(db, page, inputs.sourceTier, extracted);
+  await buildPageRelationships(db, page, inputs.sourceTier, cleaned);
   logEvent("info", "kb.index", {
     pageId: page.id,
     chunks: chunks.length,
