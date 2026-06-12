@@ -9,6 +9,7 @@
  * unit-tested directly (no mock needed).
  */
 import type { TextBlock } from "./chunking.ts";
+import { decodeHtmlEntities } from "./html-entities.ts";
 
 export interface ExtractedSection {
   ord: number;
@@ -56,7 +57,10 @@ const DENSITY_FILTERED_TAGS = new Set(["li", "dd"]);
 type Mode = "none" | "title" | "heading" | "block";
 
 function collapse(text: string): string {
-  return text.replace(/\s+/g, " ").trim();
+  // Decode HTML entities first (HTMLRewriter leaves text raw), THEN collapse
+  // whitespace: a decoded &nbsp; (U+00A0) is whitespace, so it normalizes to a
+  // single space instead of surviving as a literal entity.
+  return decodeHtmlEntities(text).replace(/\s+/g, " ").trim();
 }
 
 /** True for in-content chrome to skip entirely (edit-section/navbox/reference list). */

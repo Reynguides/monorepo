@@ -100,6 +100,23 @@ describe("extractContent (HTMLRewriter)", () => {
     expect(hrefs).toContain("/wiki/Fireball");
   });
 
+  it("decodes HTML entities (and normalizes &nbsp;) in title, headings, and blocks", async () => {
+    const html =
+      "<html><head><title>Baldur&#39;s Gate &amp; Co</title></head><body>" +
+      "<h1>Spells &amp; Cantrips</h1>" +
+      "<p>Deals 2&times;3&nbsp;fire damage &#x2014; 90&deg; arc.</p>" +
+      "</body></html>";
+    const r = await extractContent(html);
+    expect(r.title).toBe("Baldur's Gate & Co");
+    expect(r.sections[0]!.heading).toBe("Spells & Cantrips");
+    const text = r.blocks.map((b) => b.text).join(" ");
+    expect(text).toContain("Deals 2×3 fire damage — 90° arc.");
+    // No entity survives into the extracted text.
+    expect(text).not.toContain("&#");
+    expect(text).not.toContain("&times");
+    expect(text).not.toContain("&nbsp");
+  });
+
   it("returns nulls/empties for blank input", async () => {
     const r = await extractContent("<html><body><p>   </p></body></html>");
     expect(r.title).toBeNull();
