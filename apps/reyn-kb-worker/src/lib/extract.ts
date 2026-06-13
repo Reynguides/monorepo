@@ -46,6 +46,11 @@ const BLOCK_TAGS = new Set(["p", "li", "td", "th", "blockquote", "dd"]);
 const DROP_CLASS_EXACT = new Set(["references", "mw-references-wrap"]);
 const DROP_CLASS_PREFIXES = ["mw-editsection", "navbox"];
 
+// In-content chrome dropped by element id. fextralife renders its "tagged pages"
+// crosslink navbox (a ♦-separated wiki_link list) inside #tagged-pages-container —
+// pure navigation, not editorial relationships (ADR-0019), so drop text AND links.
+const DROP_IDS = new Set(["tagged-pages-container"]);
+
 // Drop list-item blocks that are mostly hyperlink ("See also" / "External links"
 // style link lists): retrieval noise that pollutes BM25 and dilutes embeddings,
 // while the link targets are still recorded as relationship edges. Only list items
@@ -66,6 +71,8 @@ function collapse(text: string): string {
 /** True for in-content chrome to skip entirely (edit-section/navbox/reference list). */
 function isDropContainer(el: Element): boolean {
   if (el.getAttribute("role") === "navigation") return true;
+  const id = el.getAttribute("id");
+  if (id !== null && DROP_IDS.has(id)) return true;
   const cls = el.getAttribute("class");
   if (cls === null) return false;
   for (const token of cls.split(/\s+/)) {

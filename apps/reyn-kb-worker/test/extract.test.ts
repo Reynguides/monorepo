@@ -117,6 +117,26 @@ describe("extractContent (HTMLRewriter)", () => {
     expect(text).not.toContain("&nbsp");
   });
 
+  it("drops fextralife's #tagged-pages-container crosslink navbox (text AND links)", async () => {
+    // Real markup: the navbox sits inside a <td> (a block), so without the drop
+    // its crosslink text would be captured as a chunk and its links as edges.
+    const html =
+      "<html><body><h1>Warlock</h1>" +
+      "<p>The Warlock draws power from an otherworldly patron.</p>" +
+      '<table class="wiki_table"><tr><td>' +
+      '<div id="tagged-pages-container">' +
+      '<a class="wiki_link" href="//x/Arcane+Trickster">Arcane Trickster</a> ' +
+      '<a class="wiki_link" href="//x/Archfey">Archfey</a></div>' +
+      "</td></tr></table></body></html>";
+    const r = await extractContent(html);
+    const text = r.blocks.map((b) => b.text).join(" ");
+    const hrefs = r.links.map((l) => l.href);
+    expect(text).toContain("otherworldly patron");
+    expect(text).not.toContain("Arcane Trickster");
+    expect(text).not.toContain("Archfey");
+    expect(hrefs).not.toContain("//x/Archfey"); // non-editorial nav links dropped as edges too
+  });
+
   it("returns nulls/empties for blank input", async () => {
     const r = await extractContent("<html><body><p>   </p></body></html>");
     expect(r.title).toBeNull();

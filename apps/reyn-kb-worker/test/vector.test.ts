@@ -133,6 +133,22 @@ describe("VectorizeIndexClient (injected stub binding)", () => {
     expect((await c.getByIds(["a"]))[0]!.id).toBe("a");
   });
 
+  it("batches upsert into <=1000-vector calls for very large pages", async () => {
+    const sizes: number[] = [];
+    const binding: VectorizeBinding = {
+      upsert: (v) => {
+        sizes.push(v.length);
+        return Promise.resolve({});
+      },
+      query: () => Promise.resolve({ matches: [] }),
+      deleteByIds: () => Promise.resolve({}),
+      getByIds: () => Promise.resolve([]),
+    };
+    const vecs = Array.from({ length: 2500 }, (_, i) => ({ id: `v${i}`, values: [1] }));
+    await new VectorizeIndexClient(binding).upsert(vecs);
+    expect(sizes).toEqual([1000, 1000, 500]);
+  });
+
   it("returns [] when the index reports no matches", async () => {
     const binding: VectorizeBinding = {
       upsert: () => Promise.resolve({}),
