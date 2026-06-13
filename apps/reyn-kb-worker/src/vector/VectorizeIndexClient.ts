@@ -35,6 +35,14 @@ export interface VectorizeBinding {
 /** Vectorize caps vectors per upsert call; sub-batch so very large pages don't 500. */
 export const UPSERT_MAX_BATCH = 1000;
 
+/**
+ * Vectorize caps the id-list payload of deleteByIds / getByIds at 100 ids per
+ * call (error 40007 "too many ids in payload; max id count is 100"). A dense
+ * page backs far more than 100 chunk vectors, so both id-list ops sub-batch —
+ * without it, superseding a >100-chunk page on re-index 500s.
+ */
+export const ID_LIST_MAX_BATCH = 100;
+
 export class VectorizeIndexClient implements IVectorIndexClient {
   private readonly index: VectorizeBinding;
 
@@ -59,10 +67,16 @@ export class VectorizeIndexClient implements IVectorIndexClient {
   }
 
   public async deleteByIds(ids: readonly string[]): Promise<void> {
-    await this.index.deleteByIds([...ids]);
+    for (let start = 0; start < ids.length; start += ID_LIST_MAX_BATCH) {
+      await this.index.deleteByIds(ids.slice(start, start + ID_LIST_MAX_BATCH));
+    }
   }
 
   public async getByIds(ids: readonly string[]): Promise<VectorRef[]> {
-    return await this.index.getByIds([...ids]);
+    const out: VectorRef[] = [];
+    for (let start = 0; start < ids.length; start += ID_LIST_MAX_BATCH) {
+      out.push(...(await this.index.getByIds(ids.slice(start, start + ID_LIST_MAX_BATCH))));
+    }
+    return out;
   }
 }
