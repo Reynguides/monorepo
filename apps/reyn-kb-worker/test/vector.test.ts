@@ -149,6 +149,39 @@ describe("VectorizeIndexClient (injected stub binding)", () => {
     expect(sizes).toEqual([1000, 1000, 500]);
   });
 
+  it("batches deleteByIds into <=100-id calls (Vectorize cap 40007)", async () => {
+    const sizes: number[] = [];
+    const binding: VectorizeBinding = {
+      upsert: () => Promise.resolve({}),
+      query: () => Promise.resolve({ matches: [] }),
+      deleteByIds: (ids) => {
+        sizes.push(ids.length);
+        return Promise.resolve({});
+      },
+      getByIds: () => Promise.resolve([]),
+    };
+    const ids = Array.from({ length: 250 }, (_, i) => `v${i}`);
+    await new VectorizeIndexClient(binding).deleteByIds(ids);
+    expect(sizes).toEqual([100, 100, 50]);
+  });
+
+  it("batches getByIds into <=100-id calls and concatenates in order", async () => {
+    const sizes: number[] = [];
+    const binding: VectorizeBinding = {
+      upsert: () => Promise.resolve({}),
+      query: () => Promise.resolve({ matches: [] }),
+      deleteByIds: () => Promise.resolve({}),
+      getByIds: (ids) => {
+        sizes.push(ids.length);
+        return Promise.resolve(ids.map((id) => ({ id })));
+      },
+    };
+    const ids = Array.from({ length: 250 }, (_, i) => `v${i}`);
+    const out = await new VectorizeIndexClient(binding).getByIds(ids);
+    expect(sizes).toEqual([100, 100, 50]);
+    expect(out.map((r) => r.id)).toEqual(ids);
+  });
+
   it("returns [] when the index reports no matches", async () => {
     const binding: VectorizeBinding = {
       upsert: () => Promise.resolve({}),
