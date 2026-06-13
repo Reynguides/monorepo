@@ -3,6 +3,13 @@ import { EmbeddingError, type IEmbeddingProvider } from "./types.ts";
 /** The bge-base model exposed by Workers AI; 768-dim sentence embeddings. */
 export const BGE_BASE_MODEL = "@cf/baai/bge-base-en-v1.5";
 
+/**
+ * Workers AI caps the number of texts per bge embedding call (~100). A single
+ * large page can produce more chunks than that, so embed() splits the input
+ * into sub-batches of this size — without it, big pages 500 at index time.
+ */
+export const EMBED_MAX_BATCH = 100;
+
 /** Shape of the Workers AI embedding response we consume. */
 interface AiEmbeddingResult {
   data?: number[][];
@@ -33,19 +40,24 @@ export class WorkersAiEmbeddingProvider implements IEmbeddingProvider {
     if (texts.length === 0) {
       return [];
     }
-    const result = await this.ai.run(BGE_BASE_MODEL, { text: [...texts] });
-    const data = result.data;
-    if (data === undefined) {
-      throw new EmbeddingError("Workers AI embedding returned no data");
+    const out: number[][] = [];
+    for (let start = 0; start < texts.length; start += EMBED_MAX_BATCH) {
+      const batch = texts.slice(start, start + EMBED_MAX_BATCH);
+      const result = await this.ai.run(BGE_BASE_MODEL, { text: [...batch] });
+      const data = result.data;
+      if (data === undefined) {
+        throw new EmbeddingError("Workers AI embedding returned no data");
+      }
+      if (data.length !== batch.length) {
+        // The provider contract is one vector per input, in order. A length
+        // mismatch would silently corrupt the chunk↔vector pairing downstream,
+        // so fail loud.
+        throw new EmbeddingError(
+          `Workers AI embedding count mismatch: expected ${batch.length}, got ${data.length}`,
+        );
+      }
+      out.push(...data);
     }
-    if (data.length !== texts.length) {
-      // The provider contract is one vector per input, in order. A length
-      // mismatch would silently corrupt the chunk↔vector pairing downstream,
-      // so fail loud.
-      throw new EmbeddingError(
-        `Workers AI embedding count mismatch: expected ${texts.length}, got ${data.length}`,
-      );
-    }
-    return data;
+    return out;
   }
 }

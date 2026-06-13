@@ -32,6 +32,9 @@ export interface VectorizeBinding {
  * Vectorize has no local emulator, so this is exercised in tests via an
  * injected stub binding.
  */
+/** Vectorize caps vectors per upsert call; sub-batch so very large pages don't 500. */
+export const UPSERT_MAX_BATCH = 1000;
+
 export class VectorizeIndexClient implements IVectorIndexClient {
   private readonly index: VectorizeBinding;
 
@@ -40,7 +43,9 @@ export class VectorizeIndexClient implements IVectorIndexClient {
   }
 
   public async upsert(vectors: readonly VectorRecord[]): Promise<void> {
-    await this.index.upsert([...vectors]);
+    for (let start = 0; start < vectors.length; start += UPSERT_MAX_BATCH) {
+      await this.index.upsert(vectors.slice(start, start + UPSERT_MAX_BATCH));
+    }
   }
 
   public async query(vector: number[], opts: QueryOptions): Promise<VectorMatch[]> {

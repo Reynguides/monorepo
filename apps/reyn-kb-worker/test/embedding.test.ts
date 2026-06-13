@@ -58,6 +58,22 @@ describe("WorkersAiEmbeddingProvider (injected stub runner)", () => {
     expect(run).toHaveBeenCalledWith(BGE_BASE_MODEL, { text: ["a", "b"] });
   });
 
+  it("batches >100 texts into multiple bge calls and concatenates in order", async () => {
+    const texts = Array.from({ length: 250 }, (_, i) => `t${i}`);
+    const run = vi.fn().mockImplementation((_m: string, input: { text: string[] }) =>
+      // one vector per input so the per-batch count check passes; encode the text
+      // length so we can assert order is preserved across batches.
+      Promise.resolve({ data: input.text.map((t) => [t.length]) }),
+    );
+    const out = await new WorkersAiEmbeddingProvider({ run }).embed(texts);
+    expect(run).toHaveBeenCalledTimes(3); // 100 + 100 + 50
+    expect((run.mock.calls[0]![1] as { text: string[] }).text).toHaveLength(100);
+    expect((run.mock.calls[2]![1] as { text: string[] }).text).toHaveLength(50);
+    expect(out).toHaveLength(250);
+    expect(out[0]).toEqual([texts[0]!.length]);
+    expect(out[249]).toEqual([texts[249]!.length]);
+  });
+
   it("throws on missing data and on a count mismatch", async () => {
     const noData = vi.fn().mockResolvedValue({});
     await expect(
